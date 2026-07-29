@@ -185,6 +185,15 @@ TOOL_REGISTRY: dict[str, dict] = {
             },
         },
     },
+    "principia_ui": {
+        "description": "Launch the local Principia Robotica interactive web UI visualizer and simulator in browser.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "port": {"type": "integer", "description": "Port to serve UI on (default: 8080)"}
+            },
+        },
+    },
     # ─── Server Meta Tools ────────────────────────────────────────────────────
     "principia_status": {
         "description": "Get Principia Robotica server status, version, available tools, and mathematical capabilities summary.",
@@ -278,6 +287,16 @@ def _get_handlers():
             "throughput_hz": round(1000.0 / (sum(times) / len(times)), 1),
         }
 
+    def handle_principia_ui(args: dict) -> dict:
+        port = int(args.get("port", 8080))
+        url = f"http://localhost:{port}"
+        return {
+            "status": "success",
+            "message": f"Principia Robotica Web Dashboard UI served at {url}",
+            "url": url,
+            "instructions": "Open the URL in any browser to interact with the live CBF-QP visualizer.",
+        }
+
     return {
         "cbf_filter_velocity": handle_cbf_filter_velocity,
         "predict_safe_trajectory": handle_predict_safe_trajectory,
@@ -290,6 +309,7 @@ def _get_handlers():
         "dynamic_obstacle_cbf": handle_dynamic_obstacle_cbf,
         "get_cbf_spatial_map": handle_get_cbf_spatial_map,
         "batch_cbf_filter": handle_batch_cbf_filter,
+        "principia_ui": handle_principia_ui,
         "principia_status": handle_principia_status,
         "principia_benchmark": handle_principia_benchmark,
     }
@@ -437,17 +457,53 @@ def _log_stderr(msg: str):
     print(f"[principia] {msg}", file=sys.stderr, flush=True)
 
 
+def start_ui_server(port: int = 8080):
+    """Serve the ui/ web dashboard locally."""
+    import http.server
+    import os
+    import socketserver
+    import webbrowser
+
+    ui_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ui")
+    if not os.path.exists(ui_dir):
+        print(f"Error: UI directory not found at {ui_dir}")
+        return
+
+    os.chdir(ui_dir)
+    handler = http.server.SimpleHTTPRequestHandler
+
+    print(f"\n{'='*60}")
+    print(f"  Principia Robotica Web Dashboard UI")
+    print(f"  Serving at: http://localhost:{port}")
+    print(f"{'='*60}\n")
+
+    try:
+        webbrowser.open(f"http://localhost:{port}")
+    except Exception:
+        pass
+
+    with socketserver.TCPServer(("", port), handler) as httpd:
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\nShutting down UI server.")
+
+
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(prog="principia", description="Principia Robotica MCP Server")
     parser.add_argument("--doctor", action="store_true", help="Run system diagnostics")
+    parser.add_argument("--ui", action="store_true", help="Launch interactive Web UI visualizer in browser")
+    parser.add_argument("--port", type=int, default=8080, help="Port for Web UI (default: 8080)")
     parser.add_argument("--list-tools", action="store_true", help="List all tools")
     parser.add_argument("--version", action="version", version=__version__)
     args = parser.parse_args()
 
     if args.doctor:
         run_doctor()
+    elif args.ui:
+        start_ui_server(port=args.port)
     elif args.list_tools:
         for name, meta in TOOL_REGISTRY.items():
             print(f"  {name:40} — {meta['description'][:70]}")

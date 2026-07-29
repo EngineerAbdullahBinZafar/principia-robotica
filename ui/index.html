@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Principia Robotica — Real-Time Control Barrier Function (CBF-QP) Visualizer</title>
+    <meta name="description" content="World-first interactive Control Barrier Function (CBF-QP) safety simulator for agentic robotics. Intercepts AI LLM velocity commands with mathematical safety guarantees.">
+    <meta name="keywords" content="Principia Robotica, Control Barrier Function, CBF-QP, ROS2, MCP Server, Autonomous Safety, LLM Robotics">
+    <meta name="author" content="Abdullah Bin Zafar">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Header Navigation -->
+        <header class="header">
+            <div class="brand">
+                <div class="logo-icon">⚡</div>
+                <div class="brand-text">
+                    <h1>PRINCIPIA ROBOTICA</h1>
+                    <p class="subtitle">Lex Prima: Real-Time CBF-QP Safety Engine for Agentic AI</p>
+                </div>
+            </div>
+            <div class="header-badges">
+                <span class="badge badge-primary">v1.0.0</span>
+                <span class="badge badge-success">CBF-QP PROVEN</span>
+                <span class="badge badge-info">1000 Hz World Model</span>
+                <span class="badge badge-author">Author: Abdullah Bin Zafar</span>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Content Grid -->
+        <main class="main-grid">
+            <!-- Left Panel: Interactive Simulation Canvas -->
+            <section class="panel canvas-panel">
+                <div class="panel-header">
+                    <h2><span class="icon">🎯</span> Live Physical Environment & Obstacle Field</h2>
+                    <div class="canvas-actions">
+                        <button id="btn-reset-robot" class="btn btn-secondary">Reset Robot</button>
+                        <button id="btn-clear-obs" class="btn btn-danger">Clear Obstacles</button>
+                        <button id="btn-add-obs" class="btn btn-primary">+ Add Obstacle</button>
+                    </div>
+                </div>
+
+                <div class="canvas-wrapper">
+                    <canvas id="sim-canvas" width="800" height="550"></canvas>
+
+                    <!-- On-Canvas HUD Overlay -->
+                    <div class="hud-overlay">
+                        <div class="hud-item">
+                            <span class="hud-label">Robot Pose:</span>
+                            <span id="hud-pose" class="hud-value">(0.00m, 0.00m, 0.0°)</span>
+                        </div>
+                        <div class="hud-item">
+                            <span class="hud-label">Safety Status:</span>
+                            <span id="hud-status" class="hud-value status-safe">POSITIVE INVARIANT (SAFE)</span>
+                        </div>
+                        <div class="hud-item">
+                            <span class="hud-label">QP Solve Time:</span>
+                            <span id="hud-solve-time" class="hud-value">0.08 ms</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Mode Selector -->
+                <div class="mode-bar">
+                    <span class="mode-title">Mode:</span>
+                    <button class="btn-mode active" data-mode="unicycle">🚗 Unicycle / Diff Drive</button>
+                    <button class="btn-mode" data-mode="quadrotor">🛸 Quadrotor Altitude Floor</button>
+                    <button class="btn-mode" data-mode="swarm">🤖 Swarm Fleet (3 Robots)</button>
+                    <button class="btn-mode" data-mode="dynamic">☄️ Dynamic Moving Obstacle</button>
+                </div>
+            </section>
+
+            <!-- Right Panel: Telemetry & Math Metrics -->
+            <aside class="panel telemetry-panel">
+                <!-- Safety Metric Gauge -->
+                <div class="card metric-card">
+                    <h3><span class="icon">🛡️</span> Control Barrier Margin $h(x)$</h3>
+                    <div class="gauge-container">
+                        <div class="gauge-bar-outer">
+                            <div id="gauge-bar-inner" class="gauge-bar-inner" style="width: 85%;"></div>
+                        </div>
+                        <div class="gauge-val-row">
+                            <span id="cbf-margin-val" class="metric-big">+0.4850</span>
+                            <span id="cbf-boundary-val" class="metric-sub">Margin to boundary $h(x)=0$</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Command vs Safe Command Comparison -->
+                <div class="card control-card">
+                    <h3><span class="icon">⚖️</span> Minimal Perturbation Filter ($u^* = \arg\min \frac{1}{2}\|u - u_{\text{AI}}\|^2$)</h3>
+
+                    <div class="cmd-comparison">
+                        <div class="cmd-box cmd-ai">
+                            <div class="cmd-box-title">🧠 Proposed AI Command ($u_{\text{AI}}$)</div>
+                            <div class="cmd-row">
+                                <span>Linear Vel ($v$):</span>
+                                <span id="val-v-ai" class="val-code">1.500 m/s</span>
+                            </div>
+                            <div class="cmd-row">
+                                <span>Angular Vel ($\omega$):</span>
+                                <span id="val-w-ai" class="val-code">0.000 rad/s</span>
+                            </div>
+                        </div>
+
+                        <div class="arrow-divider">➔ CBF-QP Filter ➔</div>
+
+                        <div class="cmd-box cmd-safe">
+                            <div class="cmd-box-title">⚡ Safe Filtered Command ($u^*$)</div>
+                            <div class="cmd-row">
+                                <span>Linear Vel ($v$):</span>
+                                <span id="val-v-safe" class="val-code">0.342 m/s</span>
+                            </div>
+                            <div class="cmd-row">
+                                <span>Angular Vel ($\omega$):</span>
+                                <span id="val-w-safe" class="val-code">0.420 rad/s</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="perturbation-box">
+                        <span>L2 Perturbation Magnitude ($\|\Delta u\|$):</span>
+                        <strong id="val-l2-norm" class="highlight-val">1.1764</strong>
+                        <span id="val-modified-badge" class="badge badge-warning">INTERCEPTED</span>
+                    </div>
+                </div>
+
+                <!-- Interactive AI Input Sliders -->
+                <div class="card sliders-card">
+                    <h3><span class="icon">🎛️</span> AI Agent Joystick & Parameters</h3>
+
+                    <div class="control-group">
+                        <label for="slider-v">AI Linear Velocity ($v_{\text{AI}}$): <span id="lbl-v">1.5 m/s</span></label>
+                        <input type="range" id="slider-v" min="-0.5" max="2.0" step="0.05" value="1.5">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="slider-omega">AI Angular Velocity ($\omega_{\text{AI}}$): <span id="lbl-omega">0.0 rad/s</span></label>
+                        <input type="range" id="slider-omega" min="-3.0" max="3.0" step="0.1" value="0.0">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="slider-gamma">CBF Class-$\mathcal{K}$ Coefficient ($\gamma$): <span id="lbl-gamma">1.5</span></label>
+                        <input type="range" id="slider-gamma" min="0.1" max="5.0" step="0.1" value="1.5">
+                    </div>
+                </div>
+
+                <!-- Lyapunov Function V(x) Card -->
+                <div class="card lyapunov-card">
+                    <h3><span class="icon">📈</span> Lyapunov Goal Convergence $V(x) = \frac{1}{2}\|x - x_{\text{goal}}\|^2$</h3>
+                    <div class="lyapunov-row">
+                        <span>$V(x)$ Energy:</span>
+                        <span id="val-lyapunov-v" class="val-code">2.1450</span>
+                    </div>
+                    <div class="lyapunov-row">
+                        <span>$\dot{V}(x)$ Derivative:</span>
+                        <span id="val-lyapunov-dv" class="val-code">-0.4210 (CONVERGING)</span>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-left">
+                <span>Principia Robotica v1.0.0 · Unified Agentic Safety Engine</span>
+                <span class="separator">•</span>
+                <span>Open Source under MIT License</span>
+            </div>
+            <div class="footer-right">
+                <span>Created by <strong>Abdullah Bin Zafar</strong> (UET Lahore)</span>
+                <span class="separator">•</span>
+                <a href="https://github.com/EngineerAbdullahBinZafar/principia-robotica" target="_blank" class="link-gh">GitHub Repository ↗</a>
+            </div>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
