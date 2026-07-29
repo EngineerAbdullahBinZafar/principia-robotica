@@ -473,7 +473,7 @@ def start_ui_server(port: int = 8080):
     handler = http.server.SimpleHTTPRequestHandler
 
     print(f"\n{'='*60}")
-    print(f"  Principia Robotica Web Dashboard UI")
+    print("  Principia Robotica Web Dashboard UI")
     print(f"  Serving at: http://localhost:{port}")
     print(f"{'='*60}\n")
 
