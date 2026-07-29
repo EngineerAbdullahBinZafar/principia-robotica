@@ -14,7 +14,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from .linalg import Vec, zeros_vec
+from .linalg import Vec
 
 
 @dataclass

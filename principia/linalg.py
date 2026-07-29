@@ -13,7 +13,6 @@ When numpy IS available, it transparently uses numpy instead for performance.
 
 from __future__ import annotations
 
-import array
 import math
 
 try:

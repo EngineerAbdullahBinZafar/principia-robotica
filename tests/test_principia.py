@@ -26,7 +26,6 @@ from principia.cbf_engine import (
 from principia.linalg import Vec
 from principia.world_model import LyapunovStabilityAnalyzer, TrajectoryPredictor
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # §1  Robot Model Tests
 # ─────────────────────────────────────────────────────────────────────────────
@@ -418,6 +417,60 @@ class TestMCPTools:
             "obstacles": [{"x": 0.0, "y": 0.0, "radius": 0.5}],
         })
         assert result["overall_safe"] is False
+
+    def test_clf_cbf_qp_solver(self):
+        from principia.tools import handle_clf_cbf_qp_solver
+        result = handle_clf_cbf_qp_solver({
+            "state_x": 0.0, "state_y": 0.0, "state_theta": 0.0,
+            "goal_x": 2.0, "goal_y": 0.0, "goal_theta": 0.0,
+        })
+        assert result["status"] == "success"
+        assert "control_command" in result
+        assert result["clf_cbf_certified"] is True
+
+    def test_swarm_cbf_fleet_safety(self):
+        from principia.tools import handle_swarm_cbf_fleet_safety
+        result = handle_swarm_cbf_fleet_safety({
+            "robots": [
+                {"id": "r1", "x": 0.0, "y": 0.0},
+                {"id": "r2", "x": 0.2, "y": 0.0},  # Distance 0.2 < min 0.6
+            ],
+            "min_distance_m": 0.6,
+        })
+        assert result["status"] == "success"
+        assert result["overall_fleet_safe"] is False
+        assert result["violation_count"] == 1
+
+    def test_dynamic_obstacle_cbf(self):
+        from principia.tools import handle_dynamic_obstacle_cbf
+        result = handle_dynamic_obstacle_cbf({
+            "state_x": 0.0, "state_y": 0.0, "state_theta": 0.0,
+            "proposed_v": 0.8, "proposed_omega": 0.0,
+            "obs_x": 2.0, "obs_y": 0.0, "obs_vx": -0.5, "obs_vy": 0.0,
+        })
+        assert result["status"] == "success"
+        assert "safe_command" in result
+
+    def test_get_cbf_spatial_map(self):
+        from principia.tools import handle_get_cbf_spatial_map
+        result = handle_get_cbf_spatial_map({
+            "state_x": 0.0, "state_y": 0.0,
+            "obstacles": [{"x": 1.0, "y": 0.0, "radius": 0.5}],
+        })
+        assert result["status"] == "success"
+        assert "ascii_radar_map" in result
+
+    def test_batch_cbf_filter(self):
+        from principia.tools import handle_batch_cbf_filter
+        result = handle_batch_cbf_filter({
+            "requests": [
+                {"id": "r1", "state_x": 0.0, "state_y": 0.0, "proposed_v": 0.5},
+                {"id": "r2", "state_x": 5.0, "state_y": 5.0, "proposed_v": 0.8},
+            ]
+        })
+        assert result["status"] == "success"
+        assert result["batch_size"] == 2
+        assert len(result["results"]) == 2
 
 
 # ─────────────────────────────────────────────────────────────────────────────

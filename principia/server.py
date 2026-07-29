@@ -121,6 +121,70 @@ TOOL_REGISTRY: dict[str, dict] = {
             },
         },
     },
+    "clf_cbf_qp_solver": {
+        "description": "[WORLD-FIRST] Combined CLF-CBF QP Controller. Simultaneously drives robot to target pose while enforcing hard barrier safety constraints.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "state_x": {"type": "number"},
+                "state_y": {"type": "number"},
+                "state_theta": {"type": "number"},
+                "goal_x": {"type": "number"},
+                "goal_y": {"type": "number"},
+                "goal_theta": {"type": "number"},
+                "obstacles": {"type": "array", "items": {"type": "object"}},
+                "clf_c": {"type": "number", "description": "Lyapunov convergence parameter"},
+            },
+        },
+    },
+    "swarm_cbf_fleet_safety": {
+        "description": "[WORLD-FIRST] Swarm fleet distance barrier checker. Evaluates inter-robot collision boundaries across N robots.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "robots": {"type": "array", "items": {"type": "object"}},
+                "min_distance_m": {"type": "number"},
+            },
+        },
+    },
+    "dynamic_obstacle_cbf": {
+        "description": "[WORLD-FIRST] Dynamic CBF safety filter for moving obstacles with relative velocity vectors.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "state_x": {"type": "number"},
+                "state_y": {"type": "number"},
+                "state_theta": {"type": "number"},
+                "proposed_v": {"type": "number"},
+                "proposed_omega": {"type": "number"},
+                "obs_x": {"type": "number"},
+                "obs_y": {"type": "number"},
+                "obs_vx": {"type": "number"},
+                "obs_vy": {"type": "number"},
+                "obs_radius": {"type": "number"},
+            },
+        },
+    },
+    "get_cbf_spatial_map": {
+        "description": "[WORLD-FIRST] Renders an ASCII safety radar grid showing surrounding obstacles and clear navigation paths.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "state_x": {"type": "number"},
+                "state_y": {"type": "number"},
+                "obstacles": {"type": "array", "items": {"type": "object"}},
+            },
+        },
+    },
+    "batch_cbf_filter": {
+        "description": "[WORLD-FIRST] Parallel batch velocity filtering for fleet of N robots.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "requests": {"type": "array", "items": {"type": "object"}},
+            },
+        },
+    },
     # ─── Server Meta Tools ────────────────────────────────────────────────────
     "principia_status": {
         "description": "Get Principia Robotica server status, version, available tools, and mathematical capabilities summary.",
@@ -140,13 +204,19 @@ TOOL_REGISTRY: dict[str, dict] = {
 # ── Import handlers lazily ────────────────────────────────────────────────────
 
 def _get_handlers():
+    from .linalg import Vec
     from .tools import (
+        handle_batch_cbf_filter,
         handle_cbf_filter_velocity,
         handle_cbf_quadrotor_altitude,
+        handle_clf_cbf_qp_solver,
+        handle_dynamic_obstacle_cbf,
         handle_get_cbf_safety_report,
+        handle_get_cbf_spatial_map,
         handle_lyapunov_stability_check,
         handle_minimal_perturbation_proof,
         handle_predict_safe_trajectory,
+        handle_swarm_cbf_fleet_safety,
     )
 
     def handle_principia_status(args: dict) -> dict:
@@ -163,10 +233,12 @@ def _get_handlers():
             "capabilities": [
                 "Control Barrier Function (CBF) real-time safety filter",
                 "CBF-QP Quadratic Program solver (via CVXPY + OSQP)",
+                "CLF-CBF Goal-seeking & Safety unification",
                 "Kinematic trajectory pre-simulation (1000Hz)",
                 "Lyapunov stability verification",
-                "Multi-obstacle safe avoidance",
-                "Quadrotor altitude safety filter",
+                "Swarm fleet collision & barrier check",
+                "Dynamic moving obstacle safety filter",
+                "ASCII Spatial Radar safety visualization",
                 "Minimal-perturbation safety correction (KKT-proven)",
                 "Full MCP stdio transport protocol",
             ],
@@ -174,8 +246,6 @@ def _get_handlers():
         }
 
     def handle_principia_benchmark(args: dict) -> dict:
-        import numpy as np
-
         from .cbf_engine import (
             CBFQPSafetyFilter,
             CircularObstacleCBF,
@@ -188,13 +258,13 @@ def _get_handlers():
         safety_filter = CBFQPSafetyFilter(
             robot=robot,
             cbfs=[cbf],
-            u_min=np.array([-0.5, -2.5]),
-            u_max=np.array([1.5, 2.5]),
+            u_min=Vec([-0.5, -2.5]),
+            u_max=Vec([1.5, 2.5]),
         )
         times = []
         for i in range(n):
-            x = np.array([0.0, float(i) * 0.01, 0.0])
-            u = np.array([0.8, 0.3])
+            x = Vec([0.0, float(i) * 0.01, 0.0])
+            u = Vec([0.8, 0.3])
             t0 = time.perf_counter()
             safety_filter.solve(x, u)
             times.append((time.perf_counter() - t0) * 1000)
@@ -215,6 +285,11 @@ def _get_handlers():
         "cbf_quadrotor_altitude": handle_cbf_quadrotor_altitude,
         "get_cbf_safety_report": handle_get_cbf_safety_report,
         "minimal_perturbation_proof": handle_minimal_perturbation_proof,
+        "clf_cbf_qp_solver": handle_clf_cbf_qp_solver,
+        "swarm_cbf_fleet_safety": handle_swarm_cbf_fleet_safety,
+        "dynamic_obstacle_cbf": handle_dynamic_obstacle_cbf,
+        "get_cbf_spatial_map": handle_get_cbf_spatial_map,
+        "batch_cbf_filter": handle_batch_cbf_filter,
         "principia_status": handle_principia_status,
         "principia_benchmark": handle_principia_benchmark,
     }
@@ -279,7 +354,6 @@ def handle_tool_call(req_id: int | str, params: dict, handlers: dict) -> dict:
 
 def run_doctor():
     """Run Principia Robotica diagnostics."""
-    import importlib
 
     print(f"\n{'='*60}")
     print(f"  Principia Robotica v{__version__} — System Doctor")

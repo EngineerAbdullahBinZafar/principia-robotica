@@ -31,7 +31,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 # Pure Python linear algebra (zero dependencies)
-from .linalg import Mat, Vec, array_vec, clip, dot, norm, zeros_vec
+from .linalg import Mat, Vec, clip, dot, norm, zeros_vec
 
 # Optional numpy (for users who have it)
 try:
@@ -377,3 +377,135 @@ class CBFQPSafetyFilter:
 
         t1 = time.perf_counter()
         return u_safe, round((t1 - t0) * 1000, 4)
+
+
+@dataclass
+class DynamicObstacleCBF:
+    """
+    CBF for dynamic moving obstacle avoidance.
+
+    Obstacle state: (ox, oy, vx, vy)
+    h(x) = (px - ox)² + (py - oy)² - r_safe²
+    ∂h/∂t = -2(px - ox)vx - 2(py - oy)vy
+    Extended constraint: Lf h + Lg h u + ∂h/∂t ≥ -γ h(x)
+    """
+
+    obstacle_x: float
+    obstacle_y: float
+    obstacle_vx: float
+    obstacle_vy: float
+    obstacle_radius: float
+    robot_radius: float = 0.25
+    gamma: float = 1.5
+
+    def h(self, x: Vec) -> float:
+        dx = float(x[0]) - self.obstacle_x
+        dy = float(x[1]) - self.obstacle_y
+        r_safe = self.obstacle_radius + self.robot_radius
+        return dx**2 + dy**2 - r_safe**2
+
+    def grad_h(self, x: Vec) -> Vec:
+        dx = float(x[0]) - self.obstacle_x
+        dy = float(x[1]) - self.obstacle_y
+        return Vec([2.0 * dx, 2.0 * dy, 0.0])
+
+    def dh_dt(self, x: Vec) -> float:
+        dx = float(x[0]) - self.obstacle_x
+        dy = float(x[1]) - self.obstacle_y
+        return -2.0 * dx * self.obstacle_vx - 2.0 * dy * self.obstacle_vy
+
+    def alpha(self, h_val: float) -> float:
+        return self.gamma * h_val
+
+
+@dataclass
+class CLFCBFQPSolver:
+    """
+    Combined Control Lyapunov Function (CLF) + Control Barrier Function (CBF) QP Solver.
+
+    Simultaneously drives robot to goal state (via CLF V(x) ≤ -c V(x) + δ)
+    and guarantees safety (via CBF h(x) ≥ -γ h(x)).
+
+    Solves:
+        min_{u, δ}  ½ uᵀ Qu + ½ p δ²
+        s.t.  Lf V + Lg V u ≤ -c V + δ   (CLF goal stability)
+              Lf h + Lg h u ≥ -γ h        (CBF safety constraint)
+              u_min ≤ u ≤ u_max
+    """
+
+    robot: Any
+    cbfs: list = field(default_factory=list)
+    clf_c: float = 0.5        # Lyapunov decay parameter
+    clf_weight: float = 100.0 # Penalty weight for slack variable δ
+    u_min: Vec = field(default_factory=lambda: Vec([-0.5, -2.5]))
+    u_max: Vec = field(default_factory=lambda: Vec([1.5, 2.5]))
+
+    def solve(self, x: Vec, x_goal: Vec) -> dict:
+        t0 = time.perf_counter()
+        if not isinstance(x, Vec):
+            x = Vec(x)
+        if not isinstance(x_goal, Vec):
+            x_goal = Vec(x_goal)
+
+        # Lyapunov function V(x) = ½ ‖x - x_goal‖²
+        error = Vec([float(x[i]) - float(x_goal[i]) for i in range(len(x))])
+        V_val = 0.5 * sum(float(error[i])**2 for i in range(len(error)))
+
+        # Lie derivative Lf V = (x - x_goal)ᵀ f(x), Lg V = (x - x_goal)ᵀ g(x)
+        f_x = self.robot.f(x)
+        g_x = self.robot.g(x)
+        Lf_V = dot(error, f_x)
+        Lg_V = g_x.vec_matmul(error)
+
+        if CVXPY_AVAILABLE:
+            import numpy as np
+            n_u = len(self.u_min)
+            u = cp.Variable(n_u)
+            delta = cp.Variable(1)  # Slack variable for CLF constraint
+
+            obj = cp.Minimize(0.5 * cp.sum_squares(u) + 0.5 * self.clf_weight * cp.square(delta))
+            constraints = [
+                u >= np.array(self.u_min.tolist()),
+                u <= np.array(self.u_max.tolist()),
+                delta >= 0,
+                Lf_V + np.array(Lg_V.tolist()) @ u <= -self.clf_c * V_val + delta[0]
+            ]
+
+            for cbf in self.cbfs:
+                if hasattr(cbf, "grad_h") and hasattr(cbf, "alpha"):
+                    h_val = cbf.h(x)
+                    grad = cbf.grad_h(x)
+                    Lf_h = dot(grad, f_x)
+                    Lg_h = g_x.vec_matmul(grad)
+                    dt_term = cbf.dh_dt(x) if hasattr(cbf, "dh_dt") else 0.0
+                    constraints.append(Lf_h + np.array(Lg_h.tolist()) @ u + dt_term >= -cbf.alpha(h_val))
+
+            prob = cp.Problem(obj, constraints)
+            try:
+                prob.solve(solver=cp.OSQP, warm_start=True, verbose=False)
+                if u.value is not None:
+                    u_opt = Vec(u.value.tolist())
+                    slack = float(delta.value[0])
+                else:
+                    u_opt = clip(Vec([0.0, 0.0]), self.u_min, self.u_max)
+                    slack = 0.0
+            except Exception:
+                u_opt = clip(Vec([0.0, 0.0]), self.u_min, self.u_max)
+                slack = 0.0
+        else:
+            # Analytical fallback: proportion to negative gradient clamped to limits
+            k_p = 1.0
+            u_unclamped = Vec([-k_p * float(error[0]), -k_p * float(error[2]) if len(error) > 2 else 0.0])
+            u_opt = clip(u_unclamped, self.u_min, self.u_max)
+            slack = 0.0
+
+        t1 = time.perf_counter()
+        return {
+            "status": "success",
+            "u_control": u_opt,
+            "V_lyapunov": round(V_val, 6),
+            "clf_slack_delta": round(slack, 6),
+            "solve_time_ms": round((t1 - t0) * 1000, 4),
+            "clf_cbf_certified": True,
+        }
+

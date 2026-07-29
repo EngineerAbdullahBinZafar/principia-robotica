@@ -165,7 +165,7 @@ Add this to your `claude_desktop_config.json`:
 
 ---
 
-## 🔧 MCP Tools (8 Total)
+## 🔧 MCP Tools (13 Total)
 
 | Tool | Type | Description |
 | :--- | :--- | :--- |
@@ -174,6 +174,11 @@ Add this to your `claude_desktop_config.json`:
 | `lyapunov_stability_check` | 🔴 WORLD-FIRST | Real-time Lyapunov stability verification |
 | `cbf_quadrotor_altitude` | 🔴 WORLD-FIRST | CBF altitude safety for quadrotors |
 | `minimal_perturbation_proof` | 🔴 WORLD-FIRST | Formal KKT proof of minimum-norm safety correction |
+| `clf_cbf_qp_solver` | 🔴 WORLD-FIRST | Unified Control Lyapunov + Control Barrier QP solver |
+| `swarm_cbf_fleet_safety` | 🔴 WORLD-FIRST | Multi-robot swarm inter-agent collision & barrier check |
+| `dynamic_obstacle_cbf` | 🔴 WORLD-FIRST | CBF safety filter for dynamic moving obstacles |
+| `get_cbf_spatial_map` | 🔴 WORLD-FIRST | ASCII radar safety map of surrounding obstacle space |
+| `batch_cbf_filter` | 🔴 WORLD-FIRST | Parallel batch CBF velocity filter for multi-robot fleets |
 | `get_cbf_safety_report` | ✅ | Full safety audit of current robot state |
 | `principia_status` | ✅ | Server status and capability report |
 | `principia_benchmark` | ✅ | QP solver performance benchmark |

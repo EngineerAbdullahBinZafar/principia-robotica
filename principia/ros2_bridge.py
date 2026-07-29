@@ -17,10 +17,8 @@ When rclpy is NOT available (simulation mode):
 
 from __future__ import annotations
 
-import json
 import math
 import threading
-import time
 from dataclasses import dataclass, field
 
 from .cbf_engine import (
@@ -30,7 +28,6 @@ from .cbf_engine import (
     VelocitySaturationCBF,
 )
 from .linalg import Vec
-from .world_model import TrajectoryPredictor
 
 try:
     import rclpy
@@ -176,7 +173,7 @@ class PrincipiaROS2Bridge:
         self._node.create_subscription(Odometry, "/odom", odom_callback, 10)
 
         self._node.get_logger().info(
-            f"Principia Safety Bridge started — filtering /cmd_vel_raw → /cmd_vel"
+            "Principia Safety Bridge started — filtering /cmd_vel_raw → /cmd_vel"
         )
 
         try:
