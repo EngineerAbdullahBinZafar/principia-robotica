@@ -1,0 +1,18 @@
+# MCP Server Configuration for Principia Robotica
+# Compatible with: Claude Desktop, Cursor, VS Code Copilot, Windsurf, Continue, etc.
+#
+# Author: Abdullah Bin Zafar
+# GitHub: https://github.com/EngineerAbdullahBinZafar/principia-robotica
+
+{
+  "mcpServers": {
+    "principia-robotica": {
+      "command": "python",
+      "args": ["-m", "principia.server"],
+      "cwd": ".",
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}

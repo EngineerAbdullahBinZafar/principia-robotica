@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "principia-robotica"
+version = "1.0.0"
+description = "World-first unified MCP gateway + Control Barrier Function (CBF-QP) safety engine for agentic robotics. Gives 1000+ AI models (Claude, GPT-4o, Gemini) mathematically safe, real-time control over physical robots via ROS2."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+# Note: Python 3.14 requires numpy>=2.3
+authors = [
+    { name = "Abdullah Bin Zafar", email = "abz.king.1.9.2003@gmail.com" }
+]
+keywords = [
+    "robotics", "ros2", "mcp", "control-barrier-function", "cbf",
+    "safety", "ai", "llm", "agentic", "claude", "gpt4", "gemini",
+    "lyapunov", "quadratic-programming", "embodied-ai", "principia-robotica"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "numpy>=2.3",
+    "scipy>=1.11",
+    "cvxpy>=1.4",
+    "osqp>=0.6",
+]
+
+[project.optional-dependencies]
+ros2 = ["rclpy"]
+dev = ["ruff", "pytest"]
+
+[project.scripts]
+principia = "principia.server:main"
+principia-doctor = "principia.server:run_doctor"
+
+[project.urls]
+Homepage = "https://github.com/EngineerAbdullahBinZafar/principia-robotica"
+Repository = "https://github.com/EngineerAbdullahBinZafar/principia-robotica"
+Issues = "https://github.com/EngineerAbdullahBinZafar/principia-robotica/issues"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
