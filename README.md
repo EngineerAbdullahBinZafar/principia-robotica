@@ -94,7 +94,22 @@ Where:
 
 ---
 
-## 🛠️ Installation
+## 🎨 Interactive Web Visualizer Dashboard (1-Second Demo)
+
+Launch the 60 FPS live HTML5 Canvas + Web GL simulator in your browser with a single command:
+
+```bash
+python -m principia.server --ui
+```
+
+- **Live Obstacle Field:** Drag and drop circular obstacles in real-time.
+- **AI Command Interceptor:** Adjust AI linear/angular velocity sliders to observe real-time CBF-QP minimal perturbation filtering.
+- **Multi-Mode Support:** Unicycle differential drive, Quadrotor 2D altitude floor, Swarm fleet inter-robot collision check, and Dynamic moving obstacles.
+- **Visual Telemetry:** Real-time $h(x)$ safety gauge, Lyapunov energy $V(x)$ plot, and predicted trajectory path.
+
+---
+
+## 🛠️ 1-Second Installation & Setup
 
 ```bash
 git clone https://github.com/EngineerAbdullahBinZafar/principia-robotica
@@ -102,7 +117,7 @@ cd principia-robotica
 pip install -e .
 ```
 
-Verify everything works:
+Verify everything works instantly:
 
 ```bash
 python -m principia.server --doctor
