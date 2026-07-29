@@ -555,6 +555,15 @@ class TestServerModule:
         assert content["version"] == "1.0.0"
         assert content["status"] == "running"
 
+    def test_principia_ui_tool_handler(self):
+        from principia.server import _get_handlers, handle_tool_call
+        handlers = _get_handlers()
+        resp = handle_tool_call(5, {"name": "principia_ui", "arguments": {"port": 8080}}, handlers)
+        assert "result" in resp
+        content = json.loads(resp["result"]["content"][0]["text"])
+        assert content["status"] == "success"
+        assert "http://localhost:8080" in content["url"]
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])
