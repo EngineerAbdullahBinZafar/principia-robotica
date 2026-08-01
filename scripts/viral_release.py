@@ -57,8 +57,8 @@ def main():
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(release_data, f, indent=2)
 
-    print(f"🟢 Release info exported to {out_file}")
-    print("🚀 Launch Manifesto ready in docs/MANIFESTO.md\n")
+    print(f"[OK] Release info exported to {out_file}")
+    print("[OK] Launch Manifesto ready in docs/MANIFESTO.md\n")
 
 
 if __name__ == "__main__":

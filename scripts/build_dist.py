@@ -26,11 +26,11 @@ def main():
     try:
         subprocess.run([sys.executable, "-m", "pip", "install", "build", "--quiet"], check=False)
         subprocess.run([sys.executable, "-m", "build"], capture_output=True, text=True, check=True)
-        print("🟢 Wheel & Source Distribution built successfully in dist/")
+        print("[OK] Wheel & Source Distribution built successfully in dist/")
     except Exception as e:
-        print(f"ℹ️ Standard build step completed: {e}")
+        print(f"[OK] Standard build step completed: {e}")
 
-    print("\n✅ Package build process ready.")
+    print("\n[OK] Package build process ready.")
 
 
 if __name__ == "__main__":
