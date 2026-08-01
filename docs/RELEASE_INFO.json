@@ -1,0 +1,12 @@
+{
+  "project": "Principia Robotica",
+  "version": "1.0.0",
+  "author": "Abdullah Bin Zafar",
+  "commit_hash": "5dc6cee",
+  "commit_count": 7,
+  "tools_count": 14,
+  "test_count": 68,
+  "pass_rate": "100%",
+  "manifesto_file": "docs/MANIFESTO.md",
+  "visualizer": "python run.py"
+}
