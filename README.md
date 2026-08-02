@@ -2,11 +2,11 @@
 
 # ⚡ PRINCIPIA ROBOTICA
 
-### *Lex Prima: Safety is not a feature. It is the law.*
+### *Lex Prima: Safety is not a prompt. It is the law.*
 
-**World-first unified Model Context Protocol (MCP) gateway + Control Barrier Function (CBF-QP) real-time safety engine for agentic robotics.**
+**The World's First Deterministic Safety Gateway for Embodied AI**
 
-Give Claude, GPT-4o, Gemini, and any AI LLM agent mathematically **proven** safe control over physical robots via ROS2.
+*The Zero-Trust Barrier Between Large Language Models and Physical Hardware.*
 
 [![Version](https://img.shields.io/badge/version-1.0.0-brightgreen?style=for-the-badge&logo=github)](https://github.com/EngineerAbdullahBinZafar/principia-robotica)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge&logo=open-source-initiative)](LICENSE)
@@ -17,7 +17,11 @@ Give Claude, GPT-4o, Gemini, and any AI LLM agent mathematically **proven** safe
 
 ---
 
-**Created:** July 2026 · **Author:** Abdullah Bin Zafar · **UET Lahore, Pakistan**
+![Principia Robotica 60 FPS Interactive Visualizer Showcase](docs/assets/demo_visualizer.svg)
+
+---
+
+**Author:** Abdullah Bin Zafar · **UET Lahore, Pakistan**
 
 *"What Newton's Principia was to classical mechanics, this is to the laws governing AI-controlled machines."*
 

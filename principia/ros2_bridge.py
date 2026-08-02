@@ -181,3 +181,17 @@ class PrincipiaROS2Bridge:
         finally:
             self._node.destroy_node()
             rclpy.shutdown()
+
+
+def main():
+    """1-Line CLI entry point for ROS2 safety bridge."""
+    bridge = PrincipiaROS2Bridge()
+    try:
+        bridge.start_ros2_node()
+    except Exception as exc:
+        print(f"[Principia ROS2 Bridge] {exc}")
+
+
+if __name__ == "__main__":
+    main()
+

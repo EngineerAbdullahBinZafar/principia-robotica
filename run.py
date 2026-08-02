@@ -25,11 +25,15 @@ def main():
         run_doctor()
     elif "--server" in sys.argv:
         start_mcp_server()
+    elif "--ros2" in sys.argv:
+        from principia.ros2_bridge import main as start_ros2
+        start_ros2()
     elif "--help" in sys.argv or "-h" in sys.argv:
         print(f"\n⚡ Principia Robotica v{__version__} — Instant Launcher")
         print("Usage:")
         print("  python run.py          Launch 60 FPS Web UI Visualizer Dashboard in browser")
         print("  python run.py --server Launch MCP stdio server (JSON-RPC 2.0)")
+        print("  python run.py --ros2   Launch 1-line ROS2 Safety Bridge (/cmd_vel_raw → /cmd_vel)")
         print("  python run.py --doctor Run system diagnostic suite\n")
     else:
         port = 8080
