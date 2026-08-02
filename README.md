@@ -54,6 +54,7 @@
 - [📐 Mathematical Architecture & Formal Proofs](#-mathematical-architecture--formal-proofs)
 - [📊 Competitive Benchmark Comparison Matrix](#-competitive-benchmark-comparison-matrix)
 - [💻 AI Client Integration Setup Matrix](#-ai-client-integration-setup-matrix)
+- [📢 Global Community Launch Suite](docs/COMMUNITY_POSTS.md)
 - [🏥 System Doctor & Troubleshooting](#-system-doctor--troubleshooting)
 - [📚 Citation, License & Author Info](#-citation-license--author-info)
 
