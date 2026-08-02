@@ -8,6 +8,9 @@
 
 *The Zero-Trust Barrier Between Large Language Models and Physical Hardware.*
 
+[![CI](https://github.com/EngineerAbdullahBinZafar/principia-robotica/actions/workflows/ci.yml/badge.svg)](https://github.com/EngineerAbdullahBinZafar/principia-robotica/actions/workflows/ci.yml)
+[![Pages](https://github.com/EngineerAbdullahBinZafar/principia-robotica/actions/workflows/pages.yml/badge.svg)](https://engineerabdullahbinzafar.github.io/principia-robotica/)
+[![PyPI](https://img.shields.io/badge/pypi-principia--robotica-blue?style=for-the-badge&logo=pypi)](dist/)
 [![Version](https://img.shields.io/badge/version-1.0.0-brightgreen?style=for-the-badge&logo=github)](https://github.com/EngineerAbdullahBinZafar/principia-robotica)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge&logo=open-source-initiative)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.14-blue?style=for-the-badge&logo=python)](https://python.org)
