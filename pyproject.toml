@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "principia-robotica"
@@ -48,6 +48,9 @@ principia-doctor = "principia.server:run_doctor"
 Homepage = "https://github.com/EngineerAbdullahBinZafar/principia-robotica"
 Repository = "https://github.com/EngineerAbdullahBinZafar/principia-robotica"
 Issues = "https://github.com/EngineerAbdullahBinZafar/principia-robotica/issues"
+
+[tool.setuptools.packages.find]
+include = ["principia*"]
 
 [tool.ruff]
 line-length = 100
