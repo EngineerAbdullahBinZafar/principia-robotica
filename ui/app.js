@@ -347,7 +347,7 @@
         ctx.arc(gPos.x, gPos.y, 16, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Draw Obstacles (with CBF Safety Boundary Rings)
+        // Draw Obstacles (with CBF Safety Boundary Rings & Industrial Gradients)
         const obsList = state.mode === "dynamic" ? [...state.obstacles, state.dynamicObs] : state.obstacles;
 
         for (let obs of obsList) {
@@ -355,30 +355,50 @@
             const rPx = obs.radius * SCALE;
             const rSafePx = (obs.radius + state.robot.radius) * SCALE;
 
-            // Physical Obstacle
-            ctx.fillStyle = "rgba(244, 63, 94, 0.35)";
-            ctx.strokeStyle = "#f43f5e";
+            // Outer Invariance Boundary Field h(x) = 0 Glow
+            const barrierGrad = ctx.createRadialGradient(oPos.x, oPos.y, rPx, oPos.x, oPos.y, rSafePx);
+            barrierGrad.addColorStop(0, "rgba(244, 63, 94, 0.22)");
+            barrierGrad.addColorStop(1, "rgba(244, 63, 94, 0.01)");
+            ctx.fillStyle = barrierGrad;
+            ctx.beginPath();
+            ctx.arc(oPos.x, oPos.y, rSafePx, 0, Math.PI * 2);
+            ctx.fill();
+
+            // CBF Safety Invariance Boundary Line h(x)=0 Ring
+            ctx.strokeStyle = "rgba(244, 63, 94, 0.75)";
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.arc(oPos.x, oPos.y, rSafePx, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Physical Obstacle Radial Metallic Gradient
+            const obsGrad = ctx.createRadialGradient(oPos.x - rPx * 0.3, oPos.y - rPx * 0.3, rPx * 0.1, oPos.x, oPos.y, rPx);
+            obsGrad.addColorStop(0, "#fb7185");
+            obsGrad.addColorStop(0.7, "#e11d48");
+            obsGrad.addColorStop(1, "#881337");
+            ctx.fillStyle = obsGrad;
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(oPos.x, oPos.y, rPx, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
-            // CBF Safety Invariance Boundary h(x)=0 Ring
-            ctx.strokeStyle = "rgba(245, 158, 11, 0.6)";
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([4, 4]);
-            ctx.beginPath();
-            ctx.arc(oPos.x, oPos.y, rSafePx, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.setLineDash([]);
+            // Label
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 10px 'Fira Code', monospace";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("OBS", oPos.x, oPos.y);
         }
 
         // Draw Dynamic Obstacle Velocity Vector
         if (state.mode === "dynamic") {
             const dPos = worldToCanvas(state.dynamicObs.x, state.dynamicObs.y);
             ctx.strokeStyle = "#f43f5e";
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 2.5;
             ctx.beginPath();
             ctx.moveTo(dPos.x, dPos.y);
             ctx.lineTo(dPos.x + state.dynamicObs.vx * SCALE * 0.8, dPos.y - state.dynamicObs.vy * SCALE * 0.8);
@@ -392,35 +412,52 @@
         const rPos = worldToCanvas(state.robot.x, state.robot.y);
         const robotR = state.robot.radius * SCALE;
 
-        // Robot Safety Glow
-        ctx.fillStyle = qpResult.modified ? "rgba(245, 158, 11, 0.25)" : "rgba(56, 189, 248, 0.25)";
-        ctx.beginPath();
-        ctx.arc(rPos.x, rPos.y, robotR + 6, 0, Math.PI * 2);
-        ctx.fill();
+        // Robot Safety Glow / Shadow
+        ctx.shadowColor = qpResult.modified ? "rgba(245, 158, 11, 0.6)" : "rgba(56, 189, 248, 0.6)";
+        ctx.shadowBlur = 14;
 
-        // Robot Body
-        ctx.fillStyle = qpResult.modified ? "#f59e0b" : "#38bdf8";
+        // Robot Body Radial Hi-Tech Gradient
+        const rGrad = ctx.createRadialGradient(rPos.x - robotR * 0.3, rPos.y - robotR * 0.3, robotR * 0.1, rPos.x, rPos.y, robotR);
+        if (qpResult.modified) {
+            rGrad.addColorStop(0, "#fde68a");
+            rGrad.addColorStop(0.6, "#f59e0b");
+            rGrad.addColorStop(1, "#b45309");
+        } else {
+            rGrad.addColorStop(0, "#93c5fd");
+            rGrad.addColorStop(0.6, "#3b82f6");
+            rGrad.addColorStop(1, "#1d4ed8");
+        }
+        ctx.fillStyle = rGrad;
         ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.arc(rPos.x, rPos.y, robotR, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 
-        // Robot Heading Indicator
-        ctx.strokeStyle = "#ffffff";
+        ctx.shadowBlur = 0; // reset shadow
+
+        // Robot Heading Indicator (Laser Line)
+        ctx.strokeStyle = "#38bdf8";
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(rPos.x, rPos.y);
         ctx.lineTo(
-            rPos.x + Math.cos(state.robot.theta) * (robotR + 10),
-            rPos.y - Math.sin(state.robot.theta) * (robotR + 10)
+            rPos.x + Math.cos(state.robot.theta) * (robotR + 14),
+            rPos.y - Math.sin(state.robot.theta) * (robotR + 14)
         );
         ctx.stroke();
 
-        // Draw AI Velocity Vector (Violet Arrow)
-        ctx.strokeStyle = "rgba(139, 92, 246, 0.8)";
-        ctx.lineWidth = 2;
+        // Lidar Scanner Dot on Top
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(rPos.x, rPos.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw AI Velocity Vector (Unsafe Proposed Arrow - Lime Green)
+        ctx.strokeStyle = "rgba(74, 222, 128, 0.85)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([6, 3]);
         ctx.beginPath();
         ctx.moveTo(rPos.x, rPos.y);
         ctx.lineTo(
@@ -428,10 +465,11 @@
             rPos.y - Math.sin(state.robot.theta) * state.aiCommand.v * SCALE * 0.6
         );
         ctx.stroke();
+        ctx.setLineDash([]);
 
-        // Draw CBF-QP Safe Velocity Vector (Cyan/Amber Arrow)
-        ctx.strokeStyle = qpResult.modified ? "#f59e0b" : "#10b981";
-        ctx.lineWidth = 3;
+        // Draw CBF-QP Safe Velocity Vector (Corrected Blue/Amber Arrow)
+        ctx.strokeStyle = qpResult.modified ? "#f59e0b" : "#38bdf8";
+        ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(rPos.x, rPos.y);
         ctx.lineTo(
