@@ -1,36 +1,34 @@
 # Principia Robotica
 
-> The World's First Deterministic Safety Gateway for Embodied AI — Active Control Barrier Function (CBF-QP) and Lyapunov stability filter guaranteeing collision-free physical actuation at >12,000 Hz.
+> The world's first unified Model Context Protocol (MCP) gateway and real-time Control Barrier Function (CBF-QP) safety engine for embodied AI and autonomous robotics. Operates at 12,000Hz (sub-millisecond latency) guaranteeing mathematically proven forward set invariance between Large Language Models and physical ROS 2 hardware actuators.
 
-## Documentation
-- [Executive Overview](README.md): Architecture, zero-trust safety gateway, problem formulation, and visual showcase.
-- [Mathematical Theory & Formal Proofs](docs/THEORY.md): Control Barrier Functions, forward set invariance, Lie derivatives, KKT optimality proofs, and Lyapunov stability.
-- [AI Client Integration Matrix](README.md#ai-client-integration-setup-matrix): Stdio MCP configuration for Claude Desktop, Cursor, Antigravity IDE, and Windsurf.
-- [Performance Benchmarks](docs/BENCHMARKS.md): Throughput profiling (>12,000 Hz), latency distributions, and solver comparisons.
+## Architecture & Core Modules
+- [principia.cbf_engine](principia/cbf_engine.py): Continuous and discrete Control Barrier Functions (CBF), Lie derivative evaluations, circular obstacle CBF, altitude floor CBF, dynamic obstacle CBF, and quadratic programming solver with analytical projection fallback.
+- [principia.world_model](principia/world_model.py): 1000Hz kinematic forward trajectory pre-simulator certifying future waypoints, and real-time Lyapunov exponential stability analyzer V(x) = 0.5 * ||x - x_goal||^2.
+- [principia.server](principia/server.py): JSON-RPC 2.0 stdio Model Context Protocol (MCP) server exposing 14 tools with O(1) hash dispatch mapping.
+- [principia.tools](principia/tools.py): Comprehensive MCP tool handlers for differential drive filtering, swarm fleet safety, quadrotor altitude protection, and ASCII radar maps.
+- [principia.linalg](principia/linalg.py): Zero-dependency pure Python linear algebra backend (Vec, Mat) executing on any CPU architecture without native wheel dependencies.
+- [principia.ros2_bridge](principia/ros2_bridge.py): Thread-safe real-time ROS 2 node bridging /cmd_vel_raw from AI agents to /cmd_vel on hardware with odometry state feedback.
 
-## Architecture & Key Concepts
-- [Active CBF-QP Filter](README.md#mathematical-architecture--formal-proofs): Quadratic programming optimization minimizing L2 control perturbation subject to forward invariance.
-- [Closed-Form Unicycle CBF](README.md#closed-form-analytical-unicycle-safety-barrier): Analytical scalar projection for circular obstacle avoidance in <0.01 ms.
-- [CLF-CBF-QP Co-Design](README.md#clf-cbf-qp-co-design-with-relaxation-slack): Joint Lyapunov goal tracking and hard safety invariance via slack relaxation delta >= 0.
-- [Multibody Dynamics & Passivity](README.md#multibody-dynamics--skew-symmetric-passivity-invariant): Euler-Lagrange equations, positive-definite inertia, and skew-symmetric passivity property.
-- [Denavit-Hartenberg Forward Kinematics](README.md#denavit-hartenberg-dh-forward-kinematics-formulation): Link transformation matrices A_i and end-effector pose T_n^0.
-- [Geometric Jacobian & DLS Pseudoinverse](README.md#geometric-jacobian--damped-least-squares-dls-pseudoinverse): Singularity-robust damped inverse and manipulability gradient null-space projection.
+## Tools & Capabilities
+- `cbf_filter_velocity`: Projects AI-proposed (v, omega) velocity commands onto the safe set with minimum L2 perturbation.
+- `predict_safe_trajectory`: Pre-simulates trajectory 3.0s into the future at 1000Hz, verifying barrier constraints before actuation.
+- `lyapunov_stability_check`: Verifies exponential goal convergence via Lyapunov derivative dV/dt <= -2 * epsilon * V.
+- `cbf_quadrotor_altitude`: Enforces minimum altitude ceiling/floor barrier constraint h(x) = z - z_min >= 0 on thrust.
+- `get_cbf_safety_report`: Full mathematical safety audit evaluating all barrier function margins for current state.
+- `minimal_perturbation_proof`: Computes Karush-Kuhn-Tucker (KKT) optimality proof confirming minimum-norm correction.
+- `clf_cbf_qp_solver`: Unifies Control Lyapunov Function goal seeking with hard Control Barrier Function safety via slack variables.
+- `swarm_cbf_fleet_safety`: Evaluates pairwise inter-robot distance barriers h_ij = ||p_i - p_j||^2 - d_min^2 across N fleet robots.
+- `dynamic_obstacle_cbf`: Moving obstacle avoidance accounting for obstacle relative velocity vectors and partial time derivatives.
+- `get_cbf_spatial_map`: Renders a 9x9 ASCII radar map visualizing obstacle safety boundaries for LLM context windows.
+- `batch_cbf_filter`: Batches velocity filter queries for an entire fleet of N robots in an atomic call.
+- `principia_ui`: Serves 60 FPS HTML5 Canvas dashboard visualizer on local port 8080.
+- `principia_status`: Server status, version, and registered tool capabilities summary.
+- `principia_benchmark`: Automated solver latency and throughput profiling over N iterations.
 
-## APIs & Tools
-- [cbf_filter_velocity](README.md#13-major-work-feature-demonstrations): Filters proposed unicycle (v, omega) commands against surrounding obstacles.
-- [predict_safe_trajectory](README.md#13-major-work-feature-demonstrations): 1000Hz fast-forward kinematic trajectory pre-simulation and certification.
-- [lyapunov_stability_check](README.md#13-major-work-feature-demonstrations): Real-time candidate Lyapunov function and derivative convergence certifier.
-- [cbf_quadrotor_altitude](README.md#13-major-work-feature-demonstrations): Altitude floor constraint filter for quadrotor thrust commands.
-- [minimal_perturbation_proof](README.md#13-major-work-feature-demonstrations): Generates formal KKT optimality proof of minimal L2 control deviation.
-- [clf_cbf_qp_solver](README.md#13-major-work-feature-demonstrations): Combined CLF-CBF solver with slack variable delta >= 0.
-- [swarm_cbf_fleet_safety](README.md#13-major-work-feature-demonstrations): Pairwise Euclidean separation distance enforcement for multi-robot fleets.
-- [dynamic_obstacle_cbf](README.md#13-major-work-feature-demonstrations): Dynamic obstacle filter incorporating explicit time derivative dh/dt.
-- [get_cbf_spatial_map](README.md#13-major-work-feature-demonstrations): 2D ASCII spatial polar radar visualization for LLM context windows.
-- [batch_cbf_filter](README.md#13-major-work-feature-demonstrations): Parallel batch velocity filtering for multi-robot swarms.
-- [get_cbf_safety_report](README.md#13-major-work-feature-demonstrations): Complete state safety audit across all active barrier functions.
-- [principia_benchmark](README.md#13-major-work-feature-demonstrations): Automated latency profiling across 500 QP solves.
-- [principia_ui](README.md#13-major-work-feature-demonstrations): Local launcher for 60 FPS HTML5 Canvas dashboard.
-
-## Optional
-- [Interactive HTML5 Web UI](ui/): Canvas visualizer, drag-and-drop obstacles, real-time barrier margin gauges.
-- [Verification Test Suite](tests/test_principia.py): 68/68 automated tests validating mathematical proofs and solver latency.
+## Key Documents
+- [README.md](README.md): Primary documentation with architecture diagrams, LaTeX math derivations, and usage guides.
+- [docs/THEORY.md](docs/THEORY.md): Formal mathematical proofs of forward set invariance, KKT optimality, and Lie derivatives.
+- [docs/BENCHMARKS.md](docs/BENCHMARKS.md): Empirical latency and throughput reports across CPU architectures.
+- [docs/MANIFESTO.md](docs/MANIFESTO.md): Launch manifesto, hacker news submission, and technical narrative.
+- [docs/COMMUNITY_POSTS.md](docs/COMMUNITY_POSTS.md): ROS 2 Discourse and community release announcements.

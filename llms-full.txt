@@ -1,99 +1,74 @@
-# Principia Robotica — Full Technical Context & System Specification
+# Principia Robotica — Full In-Depth LLM Context
 
-> Deterministic Safety Gateway for Physical Embodied AI — Active Control Barrier Function (CBF-QP) and Lyapunov Stability Filter.
+> Comprehensive technical specification, architectural definitions, complete mathematical equations, tool schemas, and operational instructions for Principia Robotica — the real-time Control Barrier Function (CBF-QP) safety gateway for embodied AI.
 
-## Core Problem Formulation
-Autonomous AI agents and Large Language Models (LLMs) generating actuator velocity commands (cmd_vel) lack physical safety guarantees. They hallucinate invalid actions, exceed acceleration limits, and fail to anticipate inertia. Principia Robotica intercepts proposed commands u_AI and projects them onto the safe control space S(x) via real-time quadratic programming at >12,000 Hz:
+## 1. Project Overview & Problem Statement
+Principia Robotica solves the safety-critical challenge of embodied AI. Large Language Models (LLMs) generating robot control inputs lack formal safety guarantees. Principia Robotica introduces an active Control Barrier Function (CBF-QP) safety filter operating at 12,000Hz (sub-millisecond latency: ~0.078ms), ensuring that all physical actuator inputs satisfy forward invariance:
+$$\forall t \ge 0: \quad h(x(t)) \ge 0$$
+where $h(x)$ defines the boundary of the safe operating set $\mathcal{C}$.
 
-    u* = argmin ½‖u - u_AI‖²
-    subject to: Lf h(x) + Lg h(x) u >= -gamma h(x)
-                u_min <= u <= u_max
+## 2. Complete Mathematical Formulations
 
-Forward invariance (Ames et al., 2017) mathematically guarantees that if x(0) is in safe set C = {x : h(x) >= 0}, then x(t) remains in C for all t >= 0.
+### Continuous Control Barrier Function (CBF)
+For control-affine system $\dot{x} = f(x) + g(x)u$, a continuously differentiable function $h(x)$ is a CBF if:
+$$\sup_{u \in \mathcal{U}} [L_f h(x) + L_g h(x) u] \ge -\alpha(h(x))$$
+where $L_f h(x) = \nabla h(x)^T f(x)$ and $L_g h(x) = \nabla h(x)^T g(x)$.
 
-## Complete Mathematical Derivations
+### Discrete Control Barrier Function (D-CBF)
+For discrete sampling period $\Delta t$:
+$$h(x_{k+1}) - h(x_k) \ge -\gamma h(x_k), \quad 0 < \gamma \le 1$$
+$$h(x_k) \ge (1 - \gamma)^k h(x_0) \ge 0$$
 
-### 1. Control Barrier Function (CBF-QP) Formulation
-For control-affine system dx/dt = f(x) + g(x)u, let safe set C = {x : h(x) >= 0}.
-Lie derivatives:
-    Lf h(x) = (grad h(x))^T f(x)
-    Lg h(x) = (grad h(x))^T g(x)
-CBF condition: sup_{u} [Lf h(x) + Lg h(x) u] >= -alpha(h(x))
+### Minimum-Intervention CBF-QP Optimization
+$$\min_{u \in \mathcal{U}, \, \delta \in \mathbb{R}} \frac{1}{2} \|u - u_{\text{nom}}\|_Q^2 + \frac{1}{2} p \delta^2$$
+$$\text{subject to: } L_f h_i(x) + L_g h_i(x) u + \alpha_i(h_i(x)) \ge -\delta, \quad u_{\min} \le u \le u_{\max}, \quad \delta \ge 0$$
 
-KKT Stationarity:
-    Q(u* - u_AI) + A_cbf^T lambda + mu_max - mu_min = 0
-Strict convexity (Q > 0) guarantees a unique global minimum u* with minimal L2 perturbation.
+### Karush-Kuhn-Tucker (KKT) Optimality
+Stationarity condition:
+$$u^* = u_{\text{nom}} + Q^{-1} \left( A_{\text{cbf}}^T \boldsymbol{\lambda}^* - \boldsymbol{\mu}_+^* + \boldsymbol{\mu}_-^* \right)$$
+Complementary slackness:
+$$\lambda_i^* ( -A_{\text{cbf}, i} u^* - b_{\text{cbf}, i} ) = 0, \quad \mu_{+, j}^* (u_j^* - u_{\max, j}) = 0, \quad \mu_{-, j}^* (u_{\min, j} - u_j^*) = 0$$
 
-### 2. Analytical Unicycle CBF Solution
-For non-holonomic unicycle state x = [px, py, theta]^T and circular obstacle at [ox, oy]^T with radius R = r_obs + r_robot:
-    h(x) = (px - ox)² + (py - oy)² - R²
-    Lf h(x) = 0
-    Lg h(x) = [2(px - ox)cos(theta) + 2(py - oy)sin(theta), 0]
-Let a(x) = 2(px - ox)cos(theta) + 2(py - oy)sin(theta).
-Constraint: a(x) v >= -gamma h(x)
-Analytical projection:
-    If a(x) > 0: v* = max(v_AI, -gamma h(x) / a(x))
-    If a(x) < 0: v* = min(v_AI, -gamma h(x) / a(x))
-    If a(x) = 0: v* = v_AI
-Computes in <0.01 ms (>12,000 Hz throughput) with zero external dependencies.
+### Euler-Lagrange Robot Dynamics
+$$M(q)\ddot{q} + C(q, \dot{q})\dot{q} + g(q) + F_v \dot{q} + F_s \text{sgn}(\dot{q}) = \tau$$
+- Inertia matrix: $M(q) = M(q)^T \succ 0$
+- Skew-symmetry: $z^T (\dot{M}(q) - 2C(q, \dot{q})) z = 0 \quad \forall z \in \mathbb{R}^n$
+- Christoffel symbols: $c_{kj} = \frac{1}{2} \sum_{i=1}^n \left( \frac{\partial m_{kj}}{\partial q_i} + \frac{\partial m_{ki}}{\partial q_j} - \frac{\partial m_{ij}}{\partial q_k} \right) \dot{q}_i$
 
-### 3. CLF-CBF-QP Co-Design
-Candidate Lyapunov function V(x) = ½‖x - x_goal‖².
-To prevent infeasibility when obstacle blocks goal, stability is relaxed with slack delta >= 0:
-    min ½ u^T Q u + ½ p delta²
-    s.t. Lf V(x) + Lg V(x) u <= -c V(x) + delta
-         Lf h(x) + Lg h(x) u >= -gamma h(x)
-         u_min <= u <= u_max, delta >= 0
+### Recursive Newton-Euler Dynamics (RNE)
+Forward kinematic recursion from base to end-effector ($i = 1 \to n$) followed by backward dynamic recursion ($i = n \to 1$):
+$$\boldsymbol{\omega}_i = \mathbf{R}_i^{i-1 \, T} \boldsymbol{\omega}_{i-1} + \dot{q}_i \mathbf{z}_0, \quad \dot{\boldsymbol{\omega}}_i = \mathbf{R}_i^{i-1 \, T} \dot{\boldsymbol{\omega}}_{i-1} + \ddot{q}_i \mathbf{z}_0 + \boldsymbol{\omega}_i \times (\dot{q}_i \mathbf{z}_0)$$
+$$\mathbf{F}_i = m_i \dot{\mathbf{v}}_{c,i}, \quad \mathbf{N}_i = \mathbf{I}_i \dot{\boldsymbol{\omega}}_i + \boldsymbol{\omega}_i \times (\mathbf{I}_i \boldsymbol{\omega}_i)$$
+$$\mathbf{f}_i = \mathbf{R}_{i+1}^i \mathbf{f}_{i+1} + \mathbf{F}_i, \quad \tau_i = \mathbf{n}_i^T \mathbf{z}_0 + b_i \dot{q}_i$$
 
-### 4. Multibody Dynamics & Skew-Symmetric Passivity
-Euler-Lagrange equations of motion:
-    M(q) q_ddot + C(q, q_dot) q_dot + g(q) = tau
-Inertia matrix M(q) = M(q)^T > 0.
-Coriolis elements via Christoffel symbols:
-    c_kj = ½ sum_i (dm_kj/dq_i + dm_ki/dq_j - dm_ij/dq_k) q_dot_i
-Skew-symmetric passivity property:
-    N(q, q_dot) = M_dot(q) - 2C(q, q_dot) = -N^T
-    x^T (M_dot - 2C) x = 0, for all x in R^n.
+### Denavit-Hartenberg (DH) Transformation & DLS Singularity Avoidance
+$$T_i^{i-1} = \begin{bmatrix}
+\cos\theta_i & -\sin\theta_i \cos\alpha_i & \sin\theta_i \sin\alpha_i & a_i \cos\theta_i \\
+\sin\theta_i & \cos\theta_i \cos\alpha_i & -\cos\theta_i \sin\alpha_i & a_i \sin\theta_i \\
+0 & \sin\alpha_i & \cos\alpha_i & d_i \\
+0 & 0 & 0 & 1
+\end{bmatrix}$$
+Singularity robust inverse kinematics via Damped Least Squares (DLS):
+$$J^* = J^T (J J^T + \lambda^2 I_6)^{-1}, \quad \dot{q} = J^* \mathbf{v}_e + (I_n - J^* J) \nabla_q w(q)$$
+where $w(q) = \sqrt{\det(J J^T)}$ is Yoshikawa's manipulability measure.
 
-### 5. Denavit-Hartenberg Forward Kinematics
-Link transformation matrix:
-    A_i = [cos(theta_i), -sin(theta_i)cos(alpha_i),  sin(theta_i)sin(alpha_i), a_i cos(theta_i);
-           sin(theta_i),  cos(theta_i)cos(alpha_i), -cos(theta_i)sin(alpha_i), a_i sin(theta_i);
-           0,            sin(alpha_i),             cos(alpha_i),            d_i;
-           0,            0,                        0,                       1]
-Composite forward kinematics: T_n^0(q) = A_1(q_1) A_2(q_2) ... A_n(q_n).
+## 3. Tool API Reference & JSON Schemas
+1. `cbf_filter_velocity`: Differential drive velocity barrier filter.
+2. `predict_safe_trajectory`: 1000Hz kinematic forward simulation.
+3. `lyapunov_stability_check`: Goal convergence checker.
+4. `cbf_quadrotor_altitude`: Minimum altitude floor barrier.
+5. `get_cbf_safety_report`: Full barrier function state audit.
+6. `minimal_perturbation_proof`: KKT optimality certificate.
+7. `clf_cbf_qp_solver`: Combined CLF-CBF controller.
+8. `swarm_cbf_fleet_safety`: Inter-robot distance barrier check.
+9. `dynamic_obstacle_cbf`: Moving obstacle avoidance.
+10. `get_cbf_spatial_map`: ASCII radar safety mapping.
+11. `batch_cbf_filter`: Parallel batch filtering for fleets.
+12. `principia_ui`: Local 60 FPS HTML5 visualizer launcher.
+13. `principia_status`: Server status and capabilities.
+14. `principia_benchmark`: Sub-millisecond performance profiler.
 
-### 6. Geometric Jacobian & Damped Least Squares (DLS)
-End-effector twist v_e = J(q) q_dot.
-Singularity condition: det(J J^T) = 0.
-Yoshikawa manipulability index: w(q) = sqrt(det(J J^T)).
-Damped pseudoinverse:
-    J_lambda_dagger = J^T (J J^T + lambda² I)^(-1)
-Manipulability gradient null-space projection:
-    q_dot = J_lambda_dagger v_e + (I - J_lambda_dagger J) k_null grad_q w(q)
-
-## MCP Tool Catalog (14 Tools)
-1. cbf_filter_velocity: Real-time velocity filter for differential drive robots.
-2. predict_safe_trajectory: Fast-forward 1000Hz simulation certifying trajectory safety.
-3. lyapunov_stability_check: Evaluates Lyapunov function V(x) and dV/dt goal convergence.
-4. cbf_quadrotor_altitude: Thrust filter enforcing drone minimum altitude.
-5. minimal_perturbation_proof: Generates KKT stationarity optimality proof.
-6. clf_cbf_qp_solver: Combined CLF + CBF QP solver with slack variable.
-7. swarm_cbf_fleet_safety: Multi-robot pairwise Euclidean separation filter.
-8. dynamic_obstacle_cbf: Moving obstacle filter with explicit dh/dt term.
-9. get_cbf_spatial_map: 2D ASCII spatial map representing surrounding obstacles.
-10. batch_cbf_filter: Parallel batch velocity filter for multi-robot fleets.
-11. get_cbf_safety_report: Complete state safety audit across all active CBFs.
-12. principia_benchmark: Solver latency and throughput benchmarking.
-13. principia_ui: Launches local 60 FPS HTML5 Canvas dashboard.
-14. principia_status: Queries active engine status and registered models.
-
-## Zero-Dependency Pure Python Backend
-Principia Robotica implements its own Vec and Mat primitives in principia/linalg.py.
-Works out-of-the-box on bare-metal and container environments without requiring numpy, scipy, or cvxpy.
-When cvxpy/osqp are installed, automatically unlocks multi-constraint polyhedral QP solving.
-
-## Verification & Testing
-Run automated pytest suite:
-    pytest tests/ -v
-68/68 passed tests covering robot models, CBFs, QP solvers, Lyapunov stability, trajectory prediction, and dynamic obstacles.
+## 4. Verification & Testing
+- Test suite: `uv run --no-project --with pytest pytest tests/test_principia.py` (68/68 passed, 100%).
+- Pure Python fallback: `principia.linalg` guarantees execution without NumPy/SciPy/CVXPY.
+- Solvers supported: CVXPY + OSQP (primary) and analytical orthogonal projection (fallback).
