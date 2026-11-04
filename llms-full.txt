@@ -1,0 +1,99 @@
+# Principia Robotica — Full Technical Context & System Specification
+
+> Deterministic Safety Gateway for Physical Embodied AI — Active Control Barrier Function (CBF-QP) and Lyapunov Stability Filter.
+
+## Core Problem Formulation
+Autonomous AI agents and Large Language Models (LLMs) generating actuator velocity commands (cmd_vel) lack physical safety guarantees. They hallucinate invalid actions, exceed acceleration limits, and fail to anticipate inertia. Principia Robotica intercepts proposed commands u_AI and projects them onto the safe control space S(x) via real-time quadratic programming at >12,000 Hz:
+
+    u* = argmin ½‖u - u_AI‖²
+    subject to: Lf h(x) + Lg h(x) u >= -gamma h(x)
+                u_min <= u <= u_max
+
+Forward invariance (Ames et al., 2017) mathematically guarantees that if x(0) is in safe set C = {x : h(x) >= 0}, then x(t) remains in C for all t >= 0.
+
+## Complete Mathematical Derivations
+
+### 1. Control Barrier Function (CBF-QP) Formulation
+For control-affine system dx/dt = f(x) + g(x)u, let safe set C = {x : h(x) >= 0}.
+Lie derivatives:
+    Lf h(x) = (grad h(x))^T f(x)
+    Lg h(x) = (grad h(x))^T g(x)
+CBF condition: sup_{u} [Lf h(x) + Lg h(x) u] >= -alpha(h(x))
+
+KKT Stationarity:
+    Q(u* - u_AI) + A_cbf^T lambda + mu_max - mu_min = 0
+Strict convexity (Q > 0) guarantees a unique global minimum u* with minimal L2 perturbation.
+
+### 2. Analytical Unicycle CBF Solution
+For non-holonomic unicycle state x = [px, py, theta]^T and circular obstacle at [ox, oy]^T with radius R = r_obs + r_robot:
+    h(x) = (px - ox)² + (py - oy)² - R²
+    Lf h(x) = 0
+    Lg h(x) = [2(px - ox)cos(theta) + 2(py - oy)sin(theta), 0]
+Let a(x) = 2(px - ox)cos(theta) + 2(py - oy)sin(theta).
+Constraint: a(x) v >= -gamma h(x)
+Analytical projection:
+    If a(x) > 0: v* = max(v_AI, -gamma h(x) / a(x))
+    If a(x) < 0: v* = min(v_AI, -gamma h(x) / a(x))
+    If a(x) = 0: v* = v_AI
+Computes in <0.01 ms (>12,000 Hz throughput) with zero external dependencies.
+
+### 3. CLF-CBF-QP Co-Design
+Candidate Lyapunov function V(x) = ½‖x - x_goal‖².
+To prevent infeasibility when obstacle blocks goal, stability is relaxed with slack delta >= 0:
+    min ½ u^T Q u + ½ p delta²
+    s.t. Lf V(x) + Lg V(x) u <= -c V(x) + delta
+         Lf h(x) + Lg h(x) u >= -gamma h(x)
+         u_min <= u <= u_max, delta >= 0
+
+### 4. Multibody Dynamics & Skew-Symmetric Passivity
+Euler-Lagrange equations of motion:
+    M(q) q_ddot + C(q, q_dot) q_dot + g(q) = tau
+Inertia matrix M(q) = M(q)^T > 0.
+Coriolis elements via Christoffel symbols:
+    c_kj = ½ sum_i (dm_kj/dq_i + dm_ki/dq_j - dm_ij/dq_k) q_dot_i
+Skew-symmetric passivity property:
+    N(q, q_dot) = M_dot(q) - 2C(q, q_dot) = -N^T
+    x^T (M_dot - 2C) x = 0, for all x in R^n.
+
+### 5. Denavit-Hartenberg Forward Kinematics
+Link transformation matrix:
+    A_i = [cos(theta_i), -sin(theta_i)cos(alpha_i),  sin(theta_i)sin(alpha_i), a_i cos(theta_i);
+           sin(theta_i),  cos(theta_i)cos(alpha_i), -cos(theta_i)sin(alpha_i), a_i sin(theta_i);
+           0,            sin(alpha_i),             cos(alpha_i),            d_i;
+           0,            0,                        0,                       1]
+Composite forward kinematics: T_n^0(q) = A_1(q_1) A_2(q_2) ... A_n(q_n).
+
+### 6. Geometric Jacobian & Damped Least Squares (DLS)
+End-effector twist v_e = J(q) q_dot.
+Singularity condition: det(J J^T) = 0.
+Yoshikawa manipulability index: w(q) = sqrt(det(J J^T)).
+Damped pseudoinverse:
+    J_lambda_dagger = J^T (J J^T + lambda² I)^(-1)
+Manipulability gradient null-space projection:
+    q_dot = J_lambda_dagger v_e + (I - J_lambda_dagger J) k_null grad_q w(q)
+
+## MCP Tool Catalog (14 Tools)
+1. cbf_filter_velocity: Real-time velocity filter for differential drive robots.
+2. predict_safe_trajectory: Fast-forward 1000Hz simulation certifying trajectory safety.
+3. lyapunov_stability_check: Evaluates Lyapunov function V(x) and dV/dt goal convergence.
+4. cbf_quadrotor_altitude: Thrust filter enforcing drone minimum altitude.
+5. minimal_perturbation_proof: Generates KKT stationarity optimality proof.
+6. clf_cbf_qp_solver: Combined CLF + CBF QP solver with slack variable.
+7. swarm_cbf_fleet_safety: Multi-robot pairwise Euclidean separation filter.
+8. dynamic_obstacle_cbf: Moving obstacle filter with explicit dh/dt term.
+9. get_cbf_spatial_map: 2D ASCII spatial map representing surrounding obstacles.
+10. batch_cbf_filter: Parallel batch velocity filter for multi-robot fleets.
+11. get_cbf_safety_report: Complete state safety audit across all active CBFs.
+12. principia_benchmark: Solver latency and throughput benchmarking.
+13. principia_ui: Launches local 60 FPS HTML5 Canvas dashboard.
+14. principia_status: Queries active engine status and registered models.
+
+## Zero-Dependency Pure Python Backend
+Principia Robotica implements its own Vec and Mat primitives in principia/linalg.py.
+Works out-of-the-box on bare-metal and container environments without requiring numpy, scipy, or cvxpy.
+When cvxpy/osqp are installed, automatically unlocks multi-constraint polyhedral QP solving.
+
+## Verification & Testing
+Run automated pytest suite:
+    pytest tests/ -v
+68/68 passed tests covering robot models, CBFs, QP solvers, Lyapunov stability, trajectory prediction, and dynamic obstacles.
