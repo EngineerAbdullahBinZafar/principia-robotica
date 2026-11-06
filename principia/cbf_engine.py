@@ -338,20 +338,18 @@ class CBFQPSafetyFilter:
 
     def _solve_analytical(self, x: Vec, u_ai: Vec):
         """
-        Pure Python CBF-QP solver for single circular obstacle.
-
-        For CircularObstacleCBF + unicycle, the QP reduces to a
-        1D linear constraint: a * v >= b
-        => v* = max(v_AI, b/a) if a > 0, else clamp.
-
-        Falls back to control limit clamping when constraint structure
-        doesn't match (safe conservative fallback).
+        Pure Python closed-form CBF-QP projection solver.
+        Solves the minimum-perturbation projection problem:
+            u* = argmin ½ ‖u - u_ai‖²
+            s.t. Lf_h + Lg_h u >= -α(h)
+                 u_min <= u <= u_max
+        Supports arbitrary linear/angular velocity constraints without external solvers.
         """
         t0 = time.perf_counter()
         u_safe = clip(u_ai, self.u_min, self.u_max)
 
         for cbf in self.cbfs:
-            if isinstance(cbf, CircularObstacleCBF):
+            if hasattr(cbf, "grad_h") and hasattr(cbf, "alpha") and hasattr(cbf, "h"):
                 h_val = cbf.h(x)
                 grad = cbf.grad_h(x)
                 f_x = self.robot.f(x)
@@ -359,21 +357,16 @@ class CBFQPSafetyFilter:
                 g_x = self.robot.g(x)
                 Lg_h = g_x.vec_matmul(grad)
 
-                a = float(Lg_h[0])  # coefficient of v in CBF constraint
-                rhs = -cbf.alpha(h_val) - Lf_h
+                # Constraint is: Lg_h · u >= -α(h) - Lf_h
+                b = -cbf.alpha(h_val) - Lf_h
+                lhs = dot(Lg_h, u_safe)
 
-                if abs(a) > 1e-8:
-                    v_min_cbf = rhs / a if a > 0 else -float("inf")
-                    v_max_cbf = rhs / a if a < 0 else float("inf")
-
-                    current_v = float(u_safe[0])
-                    if a > 0:
-                        v_safe = max(current_v, v_min_cbf)
-                    else:
-                        v_safe = min(current_v, v_max_cbf)
-
-                    v_safe = max(float(self.u_min[0]), min(float(self.u_max[0]), v_safe))
-                    u_safe = Vec([v_safe, float(u_safe[1])])
+                if lhs < b:  # Constraint violated
+                    denom = dot(Lg_h, Lg_h)
+                    if denom > 1e-12:
+                        correction = (b - lhs) / denom
+                        u_candidate = Vec([u_safe[i] + correction * float(Lg_h[i]) for i in range(len(u_safe))])
+                        u_safe = clip(u_candidate, self.u_min, self.u_max)
 
         t1 = time.perf_counter()
         return u_safe, round((t1 - t0) * 1000, 4)

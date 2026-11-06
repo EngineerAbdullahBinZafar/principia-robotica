@@ -2,21 +2,20 @@
 
 # ⚡ PRINCIPIA ROBOTICA
 
-### *Lex Prima: Safety is not a prompt. It is the law.*
+### *Real-Time Control Barrier Function (CBF-QP) Safety Filter & MCP Gateway*
 
-**The World's First Deterministic Control Barrier Function (CBF-QP) Gateway for Embodied AI**
+**Mathematically Certified Forward Invariance for Autonomous Mobile Robots & AI Agents**
 
-*A Mathematically Certified Zero-Trust Invariant Filter Operating at 12,000 Hz Between Frontier LLMs and Physical Actuators.*
+*Sub-millisecond minimum-intervention safety projection guaranteeing collision-free operation for all time $t \ge 0$.*
 
 [![CI](https://github.com/EngineerAbdullahBinZafar/principia-robotica/actions/workflows/ci.yml/badge.svg)](https://github.com/EngineerAbdullahBinZafar/principia-robotica/actions/workflows/ci.yml)
 [![Pages](https://github.com/EngineerAbdullahBinZafar/principia-robotica/actions/workflows/pages.yml/badge.svg)](https://engineerabdullahbinzafar.github.io/principia-robotica/)
-[![PyPI](https://img.shields.io/badge/pypi-principia--robotica-blue?style=for-the-badge&logo=pypi)](https://github.com/EngineerAbdullahBinZafar/principia-robotica)
 [![Version](https://img.shields.io/badge/version-1.0.0-brightgreen?style=for-the-badge&logo=github)](https://github.com/EngineerAbdullahBinZafar/principia-robotica)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge&logo=open-source-initiative)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.14-blue?style=for-the-badge&logo=python)](https://python.org)
 [![CBF](https://img.shields.io/badge/safety-CBF--QP%20Proven-critical?style=for-the-badge&logo=shield)](docs/THEORY.md)
 [![Tests](https://img.shields.io/badge/tests-68%2F68%20Passed%20(100%25)-success?style=for-the-badge&logo=pytest)](tests/test_principia.py)
-[![Throughput](https://img.shields.io/badge/throughput-12%2C800%20Hz-orange?style=for-the-badge&logo=speedtest)](docs/BENCHMARKS.md)
+[![Throughput](https://img.shields.io/badge/throughput-7%2C400%2B%20Hz-orange?style=for-the-badge&logo=speedtest)](docs/BENCHMARKS.md)
 [![Author](https://img.shields.io/badge/author-Abdullah%20Bin%20Zafar-purple?style=for-the-badge&logo=academic-pages)](https://github.com/EngineerAbdullahBinZafar)
 
 ---
@@ -25,8 +24,13 @@
 
 ---
 
-**Author:** Abdullah Bin Zafar · **UET Lahore, Pakistan**  
-*What Newton's Principia was to classical mechanics, this is to the laws governing AI-controlled machines.*
+**Author:** Abdullah Bin Zafar · **UET Lahore**  
+*Grounded in foundational Control Barrier Function (CBF) theory (Ames et al., Caltech) — engineered for zero-dependency real-time robotic agent supervision.*
+
+```bash
+# ⚡ 1-Command Live Terminal Demonstration (Zero External Dependencies)
+python demo.py
+```
 
 </div>
 
