@@ -1,5 +1,9 @@
 <div align="center">
 
+<p align="center">
+  <img src="assets/banner.png" alt="Principia Robotica — Real-Time Control Barrier Function CBF-QP Safety Filter by Engineer Abdullah Bin Zafar" width="100%" />
+</p>
+
 # ⚡ PRINCIPIA ROBOTICA
 
 ### *Real-Time Control Barrier Function (CBF-QP) Safety Filter & MCP Gateway*
