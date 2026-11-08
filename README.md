@@ -6,7 +6,7 @@
 
 **Mathematically Certified Forward Invariance for Autonomous Mobile Robots & AI Agents**
 
-*Sub-millisecond minimum-intervention safety projection guaranteeing collision-free operation for all time $t \ge 0$.*
+*Sub-millisecond minimum-intervention safety projection enforcing forward invariance under continuous-time kinematic assumptions for all time $t \ge 0$.*
 
 [![CI](https://github.com/EngineerAbdullahBinZafar/principia-robotica/actions/workflows/ci.yml/badge.svg)](https://github.com/EngineerAbdullahBinZafar/principia-robotica/actions/workflows/ci.yml)
 [![Pages](https://github.com/EngineerAbdullahBinZafar/principia-robotica/actions/workflows/pages.yml/badge.svg)](https://engineerabdullahbinzafar.github.io/principia-robotica/)
@@ -396,48 +396,6 @@ Expected diagnostic pass output:
 
 ---
 
-<details>
-<summary>Machine-Readable Metadata (Schema.org JSON-LD)</summary>
-
-```json
-{
-  "@context": "https://schema.org",
-  "@type": "SoftwareSourceCode",
-  "name": "principia-robotica",
-  "version": "1.0.0",
-  "description": "Deterministic Control Barrier Function Quadratic Programming (CBF-QP) real-time safety gateway operating at 12,000Hz for LLM-controlled autonomous robots and ROS 2 middleware.",
-  "author": {
-    "@type": "Person",
-    "name": "Abdullah Bin Zafar",
-    "email": "abz.king.1.9.2003@gmail.com",
-    "affiliation": {
-      "@type": "EducationalOrganization",
-      "name": "University of Engineering and Technology (UET) Lahore"
-    },
-    "sameAs": "https://github.com/EngineerAbdullahBinZafar"
-  },
-  "license": "https://opensource.org/licenses/MIT",
-  "codeRepository": "https://github.com/EngineerAbdullahBinZafar/principia-robotica",
-  "programmingLanguage": "Python",
-  "applicationCategory": "RoboticsSafetyMiddleware",
-  "operatingSystem": "Cross-Platform (Linux, Windows, macOS)",
-  "keywords": [
-    "control-barrier-functions",
-    "cbf-qp",
-    "formal-safety",
-    "forward-invariance",
-    "ros2",
-    "mcp-server",
-    "embodied-ai",
-    "lyapunov-stability",
-    "kkt-optimality",
-    "robotics-middleware"
-  ]
-}
-```
-
-</details>
-
 ---
 
 ## 📚 Citation, License & Author Info
@@ -445,7 +403,7 @@ Expected diagnostic pass output:
 ```bibtex
 @software{zafar2026principia,
   author = {Zafar, Abdullah Bin},
-  title = {Principia Robotica: World-First Unified MCP Gateway + Control Barrier Function (CBF-QP) Safety Engine for Agentic Robotics},
+  title = {Principia Robotica: Real-Time Control Barrier Function (CBF-QP) Safety Engine for Autonomous Mobile Robots},
   url = {https://github.com/EngineerAbdullahBinZafar/principia-robotica},
   version = {1.0.0},
   year = {2026}
