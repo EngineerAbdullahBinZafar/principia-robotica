@@ -7,6 +7,25 @@ on:
     branches: [ master, main ]
 
 jobs:
+  cpp-solver:
+    name: ⚙️ C++17 CBF-QP Core (ASan + UBSan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install G++ & CMake
+        run: sudo apt-get update && sudo apt-get install -y g++ cmake make
+
+      - name: Build & Test C++17 Solver
+        run: |
+          mkdir -p cpp/build && cd cpp/build
+          cmake .. && make -j$(nproc)
+          ctest --output-on-failure
+          cd ../..
+          g++ -std=c++17 -O3 -Wall -Wextra -Werror -fsanitize=address,undefined -Icpp/include \
+            cpp/src/cbf_qp_solver.cpp cpp/tests/test_cbf_qp.cpp -o /tmp/test_cbf_san
+          /tmp/test_cbf_san
+
   test:
     name: Run Pytest & Lint
     runs-on: ubuntu-latest

@@ -4,7 +4,7 @@ Principia Robotica — Control Barrier Function (CBF) Core Engine
 Author: Abdullah Bin Zafar <abz.king.1.9.2003@gmail.com>
 License: MIT
 
-World-first open-source unified CBF-QP safety filter exposed as MCP tool.
+Open-source unified CBF-QP safety filter exposed as an MCP tool and C++17 core.
 
 Mathematical Foundation:
     Given a robot state x ∈ ℝⁿ and control input u ∈ ℝᵐ,

@@ -8,7 +8,6 @@ Usage:
 """
 
 import math
-import sys
 import time
 
 from principia.cbf_engine import CBFQPSafetyFilter, CircularObstacleCBF, DifferentialDriveModel

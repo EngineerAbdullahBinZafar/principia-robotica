@@ -129,6 +129,14 @@ pip install -e ".[dev]"
 pytest tests/ -v
 ```
 
+### Option C: Zero-Allocation C++17 Real-Time Core (`cpp/`)
+Build and execute the native C++17 active-set KKT / Dykstra CBF-QP solver & forward-invariance test suite:
+```bash
+cd cpp && mkdir -p build && cd build
+cmake .. && make -j$(nproc)
+ctest --output-on-failure
+```
+
 ---
 
 ## 🎨 Interactive 60 FPS Web UI Visualizer

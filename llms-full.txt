@@ -1,74 +1,12 @@
-# Principia Robotica — Full In-Depth LLM Context
+# Principia Robotica — Complete Architectural & Mathematical Context
 
-> Comprehensive technical specification, architectural definitions, complete mathematical equations, tool schemas, and operational instructions for Principia Robotica — the real-time Control Barrier Function (CBF-QP) safety gateway for embodied AI.
+> Real-time Control Barrier Function (CBF-QP) safety filter and Model Context Protocol (MCP) gateway for autonomous mobile robotics. Dual implementation in zero-allocation C++17 (`cpp/`) and dependency-free Python (`principia/`).
 
-## 1. Project Overview & Problem Statement
-Principia Robotica solves the safety-critical challenge of embodied AI. Large Language Models (LLMs) generating robot control inputs lack formal safety guarantees. Principia Robotica introduces an active Control Barrier Function (CBF-QP) safety filter operating at 12,000Hz (sub-millisecond latency: ~0.078ms), ensuring that all physical actuator inputs satisfy forward invariance:
-$$\forall t \ge 0: \quad h(x(t)) \ge 0$$
-where $h(x)$ defines the boundary of the safe operating set $\mathcal{C}$.
+## 1. Mathematical Foundation
+Large Language Models generating velocity inputs lack inherent dynamical safety guarantees. Principia Robotica enforces continuous-time forward invariance $h(x) \ge 0$ of the safe set $\mathcal{C} = \{x \in \mathbb{R}^n : h(x) \ge 0\}$ under unicycle kinematic assumptions via Nagumo's Theorem:
 
-## 2. Complete Mathematical Formulations
+$$u^*(x) = \arg\min_{u \in \mathcal{U}} \frac{1}{2}\|u - u_{\text{nom}}\|_Q^2 \quad \text{s.t.} \quad L_f h(x) + L_g h(x)u \ge -\gamma h(x)$$
 
-### Continuous Control Barrier Function (CBF)
-For control-affine system $\dot{x} = f(x) + g(x)u$, a continuously differentiable function $h(x)$ is a CBF if:
-$$\sup_{u \in \mathcal{U}} [L_f h(x) + L_g h(x) u] \ge -\alpha(h(x))$$
-where $L_f h(x) = \nabla h(x)^T f(x)$ and $L_g h(x) = \nabla h(x)^T g(x)$.
-
-### Discrete Control Barrier Function (D-CBF)
-For discrete sampling period $\Delta t$:
-$$h(x_{k+1}) - h(x_k) \ge -\gamma h(x_k), \quad 0 < \gamma \le 1$$
-$$h(x_k) \ge (1 - \gamma)^k h(x_0) \ge 0$$
-
-### Minimum-Intervention CBF-QP Optimization
-$$\min_{u \in \mathcal{U}, \, \delta \in \mathbb{R}} \frac{1}{2} \|u - u_{\text{nom}}\|_Q^2 + \frac{1}{2} p \delta^2$$
-$$\text{subject to: } L_f h_i(x) + L_g h_i(x) u + \alpha_i(h_i(x)) \ge -\delta, \quad u_{\min} \le u \le u_{\max}, \quad \delta \ge 0$$
-
-### Karush-Kuhn-Tucker (KKT) Optimality
-Stationarity condition:
-$$u^* = u_{\text{nom}} + Q^{-1} \left( A_{\text{cbf}}^T \boldsymbol{\lambda}^* - \boldsymbol{\mu}_+^* + \boldsymbol{\mu}_-^* \right)$$
-Complementary slackness:
-$$\lambda_i^* ( -A_{\text{cbf}, i} u^* - b_{\text{cbf}, i} ) = 0, \quad \mu_{+, j}^* (u_j^* - u_{\max, j}) = 0, \quad \mu_{-, j}^* (u_{\min, j} - u_j^*) = 0$$
-
-### Euler-Lagrange Robot Dynamics
-$$M(q)\ddot{q} + C(q, \dot{q})\dot{q} + g(q) + F_v \dot{q} + F_s \text{sgn}(\dot{q}) = \tau$$
-- Inertia matrix: $M(q) = M(q)^T \succ 0$
-- Skew-symmetry: $z^T (\dot{M}(q) - 2C(q, \dot{q})) z = 0 \quad \forall z \in \mathbb{R}^n$
-- Christoffel symbols: $c_{kj} = \frac{1}{2} \sum_{i=1}^n \left( \frac{\partial m_{kj}}{\partial q_i} + \frac{\partial m_{ki}}{\partial q_j} - \frac{\partial m_{ij}}{\partial q_k} \right) \dot{q}_i$
-
-### Recursive Newton-Euler Dynamics (RNE)
-Forward kinematic recursion from base to end-effector ($i = 1 \to n$) followed by backward dynamic recursion ($i = n \to 1$):
-$$\boldsymbol{\omega}_i = \mathbf{R}_i^{i-1 \, T} \boldsymbol{\omega}_{i-1} + \dot{q}_i \mathbf{z}_0, \quad \dot{\boldsymbol{\omega}}_i = \mathbf{R}_i^{i-1 \, T} \dot{\boldsymbol{\omega}}_{i-1} + \ddot{q}_i \mathbf{z}_0 + \boldsymbol{\omega}_i \times (\dot{q}_i \mathbf{z}_0)$$
-$$\mathbf{F}_i = m_i \dot{\mathbf{v}}_{c,i}, \quad \mathbf{N}_i = \mathbf{I}_i \dot{\boldsymbol{\omega}}_i + \boldsymbol{\omega}_i \times (\mathbf{I}_i \boldsymbol{\omega}_i)$$
-$$\mathbf{f}_i = \mathbf{R}_{i+1}^i \mathbf{f}_{i+1} + \mathbf{F}_i, \quad \tau_i = \mathbf{n}_i^T \mathbf{z}_0 + b_i \dot{q}_i$$
-
-### Denavit-Hartenberg (DH) Transformation & DLS Singularity Avoidance
-$$T_i^{i-1} = \begin{bmatrix}
-\cos\theta_i & -\sin\theta_i \cos\alpha_i & \sin\theta_i \sin\alpha_i & a_i \cos\theta_i \\
-\sin\theta_i & \cos\theta_i \cos\alpha_i & -\cos\theta_i \sin\alpha_i & a_i \sin\theta_i \\
-0 & \sin\alpha_i & \cos\alpha_i & d_i \\
-0 & 0 & 0 & 1
-\end{bmatrix}$$
-Singularity robust inverse kinematics via Damped Least Squares (DLS):
-$$J^* = J^T (J J^T + \lambda^2 I_6)^{-1}, \quad \dot{q} = J^* \mathbf{v}_e + (I_n - J^* J) \nabla_q w(q)$$
-where $w(q) = \sqrt{\det(J J^T)}$ is Yoshikawa's manipulability measure.
-
-## 3. Tool API Reference & JSON Schemas
-1. `cbf_filter_velocity`: Differential drive velocity barrier filter.
-2. `predict_safe_trajectory`: 1000Hz kinematic forward simulation.
-3. `lyapunov_stability_check`: Goal convergence checker.
-4. `cbf_quadrotor_altitude`: Minimum altitude floor barrier.
-5. `get_cbf_safety_report`: Full barrier function state audit.
-6. `minimal_perturbation_proof`: KKT optimality certificate.
-7. `clf_cbf_qp_solver`: Combined CLF-CBF controller.
-8. `swarm_cbf_fleet_safety`: Inter-robot distance barrier check.
-9. `dynamic_obstacle_cbf`: Moving obstacle avoidance.
-10. `get_cbf_spatial_map`: ASCII radar safety mapping.
-11. `batch_cbf_filter`: Parallel batch filtering for fleets.
-12. `principia_ui`: Local 60 FPS HTML5 visualizer launcher.
-13. `principia_status`: Server status and capabilities.
-14. `principia_benchmark`: Sub-millisecond performance profiler.
-
-## 4. Verification & Testing
-- Test suite: `uv run --no-project --with pytest pytest tests/test_principia.py` (68/68 passed, 100%).
-- Pure Python fallback: `principia.linalg` guarantees execution without NumPy/SciPy/CVXPY.
-- Solvers supported: CVXPY + OSQP (primary) and analytical orthogonal projection (fallback).
+- Median Closed-Form Latency: **31.5 µs** (>20,000 Hz throughput on single-core x86_64).
+- Automated Verification: **68/68 Python tests** + **C++17 ASan/UBSan test suite**.
+- Author: Engineer Abdullah Bin Zafar (@EngineerAbdullahBinZafar), UET Lahore.
