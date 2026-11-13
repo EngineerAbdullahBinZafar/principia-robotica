@@ -245,6 +245,102 @@ class TestCBFQPSafetyFilter:
         assert result["status"] if "status" in result else True
         assert "u_safe" in result
 
+    def test_early_exit_enforces_box_bounds_without_cbfs(self):
+        robot = DifferentialDriveModel()
+        sf = CBFQPSafetyFilter(robot=robot, cbfs=[], u_min=Vec([-0.5, -2.5]), u_max=Vec([1.5, 2.5]))
+        result = sf.solve(Vec([0.0, 0.0, 0.0]), Vec([5.0, -6.0]))
+        u_safe = result["u_safe"]
+        assert abs(float(u_safe[0]) - 1.5) < 1e-9
+        assert abs(float(u_safe[1]) - (-2.5)) < 1e-9
+        assert result["was_modified"] is True
+        assert result["perturbation"] > 0.0
+
+    def test_early_exit_enforces_box_bounds_with_safe_cbf(self):
+        sf = self._make_filter(obs_x=-10.0)  # Obstacle behind robot -> CBF satisfied even for v=5.0
+        result = sf.solve(Vec([0.0, 0.0, 0.0]), Vec([5.0, 4.0]))
+        u_safe = result["u_safe"]
+        assert -0.5 - 1e-9 <= float(u_safe[0]) <= 1.5 + 1e-9
+        assert -2.5 - 1e-9 <= float(u_safe[1]) <= 2.5 + 1e-9
+        assert abs(float(u_safe[0]) - 1.5) < 1e-9
+        assert abs(float(u_safe[1]) - 2.5) < 1e-9
+        assert result["was_modified"] is True
+        assert result["feasible"] is True
+
+    def test_multi_constraint_joint_satisfaction_and_objective(self):
+        """Verify multiple coupled CBFs + box bounds are ALL satisfied simultaneously."""
+        class CoupledLinearCBF:
+            def __init__(self, a0, a1, b):
+                self._a0, self._a1, self._b = a0, a1, b
+
+            def h(self, x):
+                return -self._b
+
+            def grad_h(self, x):
+                return Vec([self._a0, 0.0, self._a1])
+
+            def alpha(self, h_val):
+                return h_val
+
+        robot = DifferentialDriveModel()
+        # Coupled halfspaces:
+        #   -v - 0.5*omega >= -0.5  (v + 0.5*omega <= 0.5)
+        #   -v + 0.5*omega >= -0.5  (v - 0.5*omega <= 0.5)
+        # Sequential projection would violate the first halfspace after projecting onto the second!
+        cbfs = [
+            CoupledLinearCBF(-1.0, -0.5, -0.5),
+            CoupledLinearCBF(-1.0, 0.5, -0.5),
+        ]
+        sf = CBFQPSafetyFilter(robot=robot, cbfs=cbfs, u_min=Vec([-0.5, -2.5]), u_max=Vec([1.5, 2.5]))
+        res = sf.solve(Vec([0.0, 0.0, 0.0]), Vec([1.5, -2.0]))
+        v, w = float(res["u_safe"][0]), float(res["u_safe"][1])
+        assert res["feasible"] is True
+        assert -0.5 - 1e-6 <= v <= 1.5 + 1e-6
+        assert -2.5 - 1e-6 <= w <= 2.5 + 1e-6
+        assert -v - 0.5 * w >= -0.5 - 1e-6
+        assert -v + 0.5 * w >= -0.5 - 1e-6
+
+        # Objective optimality when u_ai exceeds box bounds:
+        # Single constraint -v - 0.5*omega >= -0.5 with u_ai = (5.0, 3.0)
+        # True QP optimum is (0.2, 0.6), NOT pre-clamped projection (-0.3, 1.6)
+        sf_single = CBFQPSafetyFilter(
+            robot=robot,
+            cbfs=[CoupledLinearCBF(-1.0, -0.5, -0.5)],
+            u_min=Vec([-0.5, -2.5]),
+            u_max=Vec([1.5, 2.5]),
+        )
+        res_opt = sf_single.solve(Vec([0.0, 0.0, 0.0]), Vec([5.0, 3.0]))
+        assert res_opt["feasible"] is True
+        assert abs(float(res_opt["u_safe"][0]) - 0.2) < 1e-5
+        assert abs(float(res_opt["u_safe"][1]) - 0.6) < 1e-5
+
+    def test_infeasible_opposing_cbfs_bounded_slack(self):
+        robot = DifferentialDriveModel()
+        obs_front = CircularObstacleCBF(obstacle_x=0.5, obstacle_y=0.0, obstacle_radius=0.6, robot_radius=0.25, gamma=4.0)
+        obs_back = CircularObstacleCBF(obstacle_x=-0.5, obstacle_y=0.0, obstacle_radius=0.6, robot_radius=0.25, gamma=4.0)
+        sf = CBFQPSafetyFilter(robot=robot, cbfs=[obs_front, obs_back], u_min=Vec([-0.5, -2.5]), u_max=Vec([1.5, 2.5]))
+        res = sf.solve(Vec([0.0, 0.0, 0.0]), Vec([1.0, 0.4]))
+        assert res["feasible"] is False
+        assert res["was_modified"] is True
+        assert -0.5 - 1e-9 <= float(res["u_safe"][0]) <= 1.5 + 1e-9
+        assert -2.5 - 1e-9 <= float(res["u_safe"][1]) <= 2.5 + 1e-9
+
+    def test_dynamic_obstacle_dh_dt_enforced(self):
+        from principia.cbf_engine import DynamicObstacleCBF
+        robot = DifferentialDriveModel()
+        # Obstacle approaching at vx = -0.8 m/s (requires reversing at <= -0.252 m/s)
+        dyn = DynamicObstacleCBF(
+            obstacle_x=1.2, obstacle_y=0.0, obstacle_vx=-0.8, obstacle_vy=0.0,
+            obstacle_radius=0.5, robot_radius=0.25, gamma=1.5,
+        )
+        sf = CBFQPSafetyFilter(robot=robot, cbfs=[dyn], u_min=Vec([-0.5, -2.5]), u_max=Vec([1.5, 2.5]))
+        res = sf.solve(Vec([0.0, 0.0, 0.0]), Vec([0.8, 0.0]))
+        assert res["feasible"] is True
+        assert res["was_modified"] is True
+        assert float(res["u_safe"][0]) < 0.0
+
+    def test_docstring_no_world_first_claim(self):
+        assert "world-first" not in (CBFQPSafetyFilter.__doc__ or "").lower()
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # §4  Trajectory Predictor Tests
