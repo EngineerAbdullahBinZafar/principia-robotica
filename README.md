@@ -22,6 +22,8 @@
 [![Throughput](https://img.shields.io/badge/throughput-7%2C400%2B%20Hz-orange?style=for-the-badge&logo=speedtest)](docs/BENCHMARKS.md)
 [![Author](https://img.shields.io/badge/author-Abdullah%20Bin%20Zafar-purple?style=for-the-badge&logo=academic-pages)](https://github.com/EngineerAbdullahBinZafar)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/EngineerAbdullahBinZafar/principia-robotica)
+[![Opire Bounties](https://img.shields.io/badge/Bounties-Opire-7c3aed?style=for-the-badge&logo=target&logoColor=white)](https://app.opire.dev)
+[![Polar](https://img.shields.io/badge/Sponsor-Polar.sh-blue?style=for-the-badge&logo=polar)](https://polar.sh/abdullah-bin-zafar)
 
 ---
 
@@ -56,6 +58,7 @@ python demo.py
 - [🤖 AI Client Integration Setup (Claude, Cursor, Windsurf)](#-ai-client-integration-setup-claude-cursor-windsurf)
 - [🏎️ Performance Benchmarks & Empirical Latency](#️-performance-benchmarks--empirical-latency)
 - [🏥 System Doctor & Diagnostic Suite](#-system-doctor--diagnostic-suite)
+- [💰 Commercial Feature Bounties & Sponsorship (Opire & Polar)](#-commercial-feature-bounties--sponsorship-opire--polar)
 - [📚 Citation, License & Author Info](#-citation-license--author-info)
 
 ---
@@ -408,6 +411,24 @@ Expected diagnostic pass output:
 ```
 
 ---
+
+## 💰 Commercial Feature Bounties & Sponsorship (Opire & Polar)
+
+Principia Robotica offers transparent pathways for commercial robotics enterprises, autonomous driving startups, and research teams to commission custom barrier functions, hardware nodes, and accelerated solvers:
+
+| Platform | Channel | Purpose |
+| :--- | :--- | :--- |
+| **Opire Bounties** | `@opire /bounty $amount` | Fund specific community feature requests, specialized CBF filters, or new MCP tools with cash bounties |
+| **Polar Sponsorship** | [polar.sh/abdullah-bin-zafar](https://polar.sh/abdullah-bin-zafar) | Commercial licensing, production Docker deployments, and dedicated engineering support ($299/mo or $499 one-time) |
+
+### How to Fund a Feature via Opire:
+1. Open a new issue using the [Funded Feature Request Template](.github/ISSUE_TEMPLATE/feature_bounty.md).
+2. Attach a cash bounty directly in an issue comment:
+   ```text
+   @opire /bounty $250
+   ```
+   *(or `/reward 250`)*
+3. Developers can indicate they are working on it using `/try`, and claim the bounty upon PR merge via `/claim #<issue_number>`.
 
 ---
 
