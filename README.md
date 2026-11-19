@@ -18,9 +18,10 @@
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge&logo=open-source-initiative)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.14-blue?style=for-the-badge&logo=python)](https://python.org)
 [![CBF](https://img.shields.io/badge/safety-CBF--QP%20Proven-critical?style=for-the-badge&logo=shield)](docs/THEORY.md)
-[![Tests](https://img.shields.io/badge/tests-68%2F68%20Passed%20(100%25)-success?style=for-the-badge&logo=pytest)](tests/test_principia.py)
+[![Tests](https://img.shields.io/badge/tests-74%2F74%20Passed%20(100%25)-success?style=for-the-badge&logo=pytest)](tests/test_principia.py)
 [![Throughput](https://img.shields.io/badge/throughput-7%2C400%2B%20Hz-orange?style=for-the-badge&logo=speedtest)](docs/BENCHMARKS.md)
 [![Author](https://img.shields.io/badge/author-Abdullah%20Bin%20Zafar-purple?style=for-the-badge&logo=academic-pages)](https://github.com/EngineerAbdullahBinZafar)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/EngineerAbdullahBinZafar/principia-robotica)
 
 ---
 

@@ -1,0 +1,13 @@
+{
+  "name": "Principia Robotica (CBF-QP)",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "postCreateCommand": "pip install -e . && pip install pytest numpy scipy matplotlib",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  }
+}
